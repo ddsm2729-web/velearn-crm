@@ -1,0 +1,84 @@
+.batch-card {
+    background: #fff;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.batch-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.category-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #3b82f6;
+    display: block;
+}
+
+.batch-code {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.live-indicator-pill {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+.upcoming-indicator-pill {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+.info-label {
+    color: #64748b;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.info-value {
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-bottom: 0;
+}
+
+.btn-xs {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+.bg-danger-soft { background: rgba(239, 68, 68, 0.1); }
+.bg-primary-soft { background: rgba(59, 130, 246, 0.1); }
+
+.pulse-dot {
+    height: 8px;
+    width: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.border-top-dashed {
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}

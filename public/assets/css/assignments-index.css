@@ -1,0 +1,88 @@
+.course-tab {
+                background-color: #fff !important;
+                color: #4b5563 !important;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 8px !important;
+                padding: 8px 16px !important;
+                font-weight: 600 !important;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+            }
+
+            .course-tab.active {
+                background-color: #fdf2f8 !important;
+                color: #db2777 !important;
+                border: 1px solid #fbcfe8 !important;
+            }
+
+            .segmented-control {
+                display: inline-flex;
+                background: #fff;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+                overflow: hidden;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            }
+
+            .segmented-control .btn {
+                border: none;
+                border-radius: 0;
+                padding: 10px 40px;
+                font-weight: 600;
+                color: #4b5563;
+            }
+
+            .segmented-control .btn.active {
+                background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+                color: #fff;
+            }
+
+            .assignment-card {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                background: #fff;
+            }
+
+            .due-badge {
+                background-color: #fef3c7;
+                color: #92400e;
+                border: none;
+                font-weight: 600;
+                border-radius: 20px;
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            /* Accordion & Evaluation styles */
+            .submission-row-card {
+                background: #fff;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow: hidden;
+            }
+            .submission-row-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08);
+                border-color: #cbd5e1;
+            }
+            .cursor-pointer {
+                cursor: pointer;
+            }
+            .score-box {
+                background-color: #f0fdf4;
+                border: 1px solid #dcfce7;
+            }
+            .grade-box {
+                background-color: #f0f9ff;
+                border: 1px solid #e0f2fe;
+            }
+            .feedback-box {
+                background-color: #f8fafc;
+                border: 1px solid #f1f5f9;
+            }
+            .uppercase-tracking {
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }

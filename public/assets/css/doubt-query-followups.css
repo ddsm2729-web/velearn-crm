@@ -1,0 +1,273 @@
+/* ============================================================
+   DOUBT QUERY FOLLOW-UPS — Premium CSS
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+.fup-page {
+    font-family: 'Inter', sans-serif;
+    padding: 1.5rem 2rem;
+    min-height: 100vh;
+    color: #1e293b;
+}
+
+/* --- Header --- */
+.fup-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.fup-header-left h1 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin: 0 0 0.2rem;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+.fup-header-left p {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+    font-weight: 500;
+}
+.fup-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1.5px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    font-size: 0.78rem;
+    color: #1d4ed8;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.fup-count-badge i { color: #3b82f6; }
+
+/* --- Card container --- */
+.fup-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+}
+
+/* --- Table --- */
+.fup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.fup-table thead {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1.5px solid #e2e8f0;
+}
+.fup-table thead th {
+    padding: 0.9rem 1.1rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    white-space: nowrap;
+}
+.fup-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+}
+.fup-table tbody tr:last-child { border-bottom: none; }
+.fup-table tbody tr:hover { background: #f8fafc; }
+.fup-table tbody td {
+    padding: 0.85rem 1.1rem;
+    font-size: 0.83rem;
+    color: #374151;
+    vertical-align: middle;
+}
+
+/* Reference ID */
+.fup-ref {
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #6366f1;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    white-space: nowrap;
+}
+
+/* Student cell */
+.fup-student {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.fup-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.fup-student-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.83rem;
+}
+
+/* Date cell */
+.fup-date {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+.fup-date i { color: #94a3b8; font-size: 0.7rem; }
+
+/* Slot cell */
+.fup-slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+.fup-slot i { color: #94a3b8; font-size: 0.65rem; }
+
+/* Status badge */
+.fup-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.fup-status.scheduled {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+.fup-status.completed {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+.fup-status.pending {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fdba74;
+}
+.fup-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+
+/* Action button */
+.fup-btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.25);
+}
+.fup-btn-view:hover {
+    background: linear-gradient(135deg, #1d4ed8, #4338ca);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+/* --- Empty state --- */
+.fup-empty {
+    padding: 5rem 2rem;
+    text-align: center;
+}
+.fup-empty-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+}
+.fup-empty-icon i { font-size: 1.75rem; color: #94a3b8; }
+.fup-empty h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 0.4rem;
+}
+.fup-empty p {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* --- Pagination --- */
+.fup-pagination {
+    padding: 1rem 1.25rem;
+    border-top: 1.5px solid #f1f5f9;
+    background: #fafafa;
+    display: flex;
+    justify-content: center;
+}
+.fup-pagination nav { display: flex; justify-content: center; }
+.fup-pagination .page-link {
+    border-radius: 7px !important;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0 2px;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+.fup-pagination .page-item.active .page-link {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+.fup-pagination .page-link:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    border-color: #cbd5e1;
+}
+
+@media (max-width: 768px) {
+    .fup-page { padding: 1rem; }
+    .fup-table { display: block; overflow-x: auto; }
+}

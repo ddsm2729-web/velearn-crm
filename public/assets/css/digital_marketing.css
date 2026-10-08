@@ -1,0 +1,112 @@
+/* ================================================================
+   Digital Marketing Dashboard — Stylesheet
+   Path: public/css/digital_marketing.css
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+    --dm-purple : #7c3aed;
+    --dm-indigo : #4f46e5;
+    --dm-pink   : #ec4899;
+    --dm-cyan   : #06b6d4;
+    --dm-emerald: #10b981;
+    --dm-amber  : #f59e0b;
+    --dm-rose   : #ef4444;
+    --dm-sky    : #0ea5e9;
+    --dm-dark   : #0f172a;
+    --dm-muted  : #64748b;
+    --dm-border : #e2e8f0;
+    --dm-bg     : #f1f5f9;
+    --dm-card   : #ffffff;
+    --dm-radius : .875rem;
+    --dm-shadow : 0 1px 3px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.07);
+    --dm-shadow-hover: 0 8px 28px rgba(124,58,237,.18);
+}
+
+body { background: var(--dm-bg) !important; font-family: 'Inter', sans-serif; }
+
+/* ── HERO ──────────────────────────────────────────────────────── */
+.dm-hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 45%, #ec4899 100%);
+    border-radius: 1.25rem; padding: 2.25rem 2.5rem;
+    color: #fff; position: relative; overflow: hidden; margin-bottom: 1.75rem;
+}
+.dm-hero::before { content:''; position:absolute; top:-70px; right:-70px; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,.06); }
+.dm-hero::after  { content:''; position:absolute; bottom:-80px; right:120px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,.04); }
+.dm-hero h2  { font-size:1.65rem; font-weight:800; margin-bottom:.3rem; }
+.dm-hero p   { opacity:.78; font-size:.875rem; margin:0; }
+.hero-chip   { background:rgba(255,255,255,.16); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.24); border-radius:2rem; padding:.38rem 1rem; font-size:.78rem; color:#fff; display:inline-flex; align-items:center; gap:.4rem; }
+.live-dot    { width:7px; height:7px; border-radius:50%; background:#4ade80; display:inline-block; animation:pulse-l 1.5s infinite; }
+@keyframes pulse-l { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+.hero-kpi    { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); border-radius:1rem; padding:1rem 1.25rem; text-align:center; }
+.hero-kpi-val{ font-size:1.75rem; font-weight:800; line-height:1; }
+.hero-kpi-lbl{ font-size:.72rem; opacity:.75; margin-top:.25rem; }
+
+/* ── STAT CARD ──────────────────────────────────────────────────── */
+.sc { background:var(--dm-card); border-radius:var(--dm-radius); box-shadow:var(--dm-shadow); border:1px solid var(--dm-border); transition:transform .2s,box-shadow .2s; position:relative; overflow:hidden; }
+.sc:hover { transform:translateY(-3px); box-shadow:var(--dm-shadow-hover); }
+.sc-bar { height:3px; border-radius:var(--dm-radius) var(--dm-radius) 0 0; }
+.sc-body { padding:1.4rem 1.5rem; }
+.sc-label { font-size:.67rem; text-transform:uppercase; letter-spacing:.09em; color:var(--dm-muted); font-weight:700; margin-bottom:.35rem; }
+.sc-val   { font-size:2rem; font-weight:800; color:var(--dm-dark); line-height:1.1; margin-bottom:.3rem; }
+.sc-sub   { font-size:.76rem; color:var(--dm-muted); }
+.sc-icon  { width:46px; height:46px; border-radius:.75rem; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.clr-up   { color:#10b981; font-weight:600; }
+.clr-dn   { color:#ef4444; font-weight:600; }
+
+/* ── SECTION TITLE ──────────────────────────────────────────────── */
+.sec-title { font-size:.95rem; font-weight:700; color:var(--dm-dark); display:flex; align-items:center; gap:.5rem; margin-bottom:1rem; }
+.sec-title .tbar { width:3px; height:1.1rem; border-radius:99px; display:inline-block; }
+
+/* ── PANEL ──────────────────────────────────────────────────────── */
+.panel { background:var(--dm-card); border-radius:var(--dm-radius); box-shadow:var(--dm-shadow); border:1px solid var(--dm-border); overflow:hidden; }
+.panel-head { padding:1.1rem 1.5rem; border-bottom:1px solid var(--dm-border); display:flex; align-items:center; justify-content:space-between; }
+.panel-title { font-size:.875rem; font-weight:700; color:var(--dm-dark); margin:0; }
+.panel-badge { font-size:.7rem; font-weight:700; padding:.25rem .75rem; border-radius:99px; }
+
+/* ── TABLE ──────────────────────────────────────────────────────── */
+.dm-tbl thead th { background:#f8fafc; font-size:.67rem; text-transform:uppercase; letter-spacing:.08em; color:var(--dm-muted); font-weight:700; border-bottom:2px solid var(--dm-border); padding:.8rem 1.1rem; }
+.dm-tbl tbody td { padding:.85rem 1.1rem; vertical-align:middle; border-bottom:1px solid var(--dm-border); font-size:.82rem; color:var(--dm-dark); }
+.dm-tbl tbody tr:last-child td { border-bottom:none; }
+.dm-tbl tbody tr:hover { background:#fafbfd; }
+
+/* ── TAGS ───────────────────────────────────────────────────────── */
+.tp { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:.22rem .7rem; border-radius:99px; }
+.tp-hot  { background:#fee2e2; color:#ef4444; }
+.tp-warm { background:#fef3c7; color:#d97706; }
+.tp-cold { background:#eef2ff; color:#6366f1; }
+.tp-new  { background:#f1f5f9; color:#64748b; }
+.tp-cont { background:#dcfce7; color:#16a34a; }
+.tp-in   { background:#d1fae5; color:#059669; }
+.tp-out  { background:#cffafe; color:#0891b2; }
+.tp-miss { background:#fee2e2; color:#ef4444; }
+
+/* ── DONUT ──────────────────────────────────────────────────────── */
+.donut-wrap { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+.donut-wrap canvas { display:block; }
+.donut-center { position:absolute; text-align:center; pointer-events:none; }
+.donut-center .dc-val { font-size:1.5rem; font-weight:800; color:var(--dm-dark); line-height:1; }
+.donut-center .dc-lbl { font-size:.7rem; color:var(--dm-muted); }
+
+/* ── PROGRESS BAR ───────────────────────────────────────────────── */
+.prog-item { margin-bottom:.85rem; }
+.prog-lbl  { display:flex; justify-content:space-between; font-size:.78rem; font-weight:600; color:var(--dm-dark); margin-bottom:.3rem; }
+.prog-lbl span { color:var(--dm-muted); font-weight:500; }
+.prog-bar  { height:7px; border-radius:99px; background:#f1f5f9; overflow:hidden; }
+.prog-fill { height:100%; border-radius:99px; transition:width .8s ease; }
+
+/* ── AVATAR ─────────────────────────────────────────────────────── */
+.av { width:34px; height:34px; border-radius:50%; font-size:.72rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+/* ── KPI RING ───────────────────────────────────────────────────── */
+.kpi-ring-wrap { text-align:center; padding:1.25rem; }
+.kpi-ring-val  { font-size:2.4rem; font-weight:900; line-height:1; }
+.kpi-ring-lbl  { font-size:.78rem; color:var(--dm-muted); margin-top:.35rem; font-weight:600; }
+.kpi-ring-sub  { font-size:.7rem; color:var(--dm-muted); margin-top:.15rem; }
+
+/* ── CONVERSION GAUGE ───────────────────────────────────────────── */
+.gauge-card { padding:1.5rem; text-align:center; }
+.gauge-val  { font-size:3rem; font-weight:900; background:linear-gradient(135deg, #7c3aed, #ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1; }
+.gauge-lbl  { font-size:.9rem; font-weight:700; color:var(--dm-dark); margin-top:.35rem; }
+.gauge-sub  { font-size:.78rem; color:var(--dm-muted); margin-top:.2rem; }

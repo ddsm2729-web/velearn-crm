@@ -1,0 +1,209 @@
+.cert-page {
+    color: #495057;
+    padding: 0.5rem;
+    min-height: calc(100vh - 100px);
+    background-color: #f8f9fa; /* Light theme background */
+    border-radius: 12px;
+}
+
+/* Header */
+.cert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.cert-header h2 {
+    font-size: 1.4rem; /* Reduced font size */
+    font-weight: 700;
+    color: #212529; /* Dark text */
+    margin: 0;
+}
+
+.cert-dropdown select {
+    background-color: #ffffff; /* Light dropdown */
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    padding-right: 2rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23adb5bd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.cert-dropdown select:focus {
+    border-color: #1f6feb;
+    box-shadow: 0 0 0 2px rgba(31,111,235,0.1);
+}
+
+/* List */
+.cert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Card */
+.cert-card {
+    background-color: #ffffff; /* White card */
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.cert-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transform: translateY(-1px);
+}
+
+/* Left Side: Icon & Details */
+.cert-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cert-icon-box {
+    width: 44px;
+    height: 44px;
+    background-color: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #d97706; /* Darker orange for light theme visibility */
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.cert-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.cert-name {
+    margin: 0;
+    font-size: 0.95rem; /* Reduced size */
+    font-weight: 700;
+    color: #212529; /* Dark text */
+}
+
+.cert-course {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.cert-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 0.1rem;
+    font-size: 0.75rem;
+    color: #adb5bd;
+}
+
+.cert-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Right Side: Status & Action */
+.cert-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+/* Status Badges */
+.cert-status {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.status-ready {
+    background-color: rgba(46, 160, 67, 0.1);
+    color: #1a7f37; /* Darker green */
+    border: 1px solid rgba(46, 160, 67, 0.2);
+}
+
+.status-issued {
+    background-color: rgba(31, 111, 235, 0.1);
+    color: #0969da; /* Darker blue */
+    border: 1px solid rgba(31, 111, 235, 0.2);
+}
+
+.status-pending {
+    background-color: rgba(210, 153, 34, 0.1);
+    color: #9a6700; /* Darker yellow/orange */
+    border: 1px solid rgba(210, 153, 34, 0.2);
+}
+
+/* Buttons */
+.cert-btn-download {
+    background-color: #1f6feb;
+    border: 1px solid #1f6feb;
+    color: #ffffff;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem; /* Reduced */
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.cert-btn-download:hover:not(.btn-disabled) {
+    background-color: #388bfd;
+    border-color: #388bfd;
+}
+
+.cert-btn-download.btn-disabled {
+    background-color: #f8f9fa; /* Light disabled bg */
+    border: 1px solid #dee2e6;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cert-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .cert-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .cert-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

@@ -1,0 +1,487 @@
+/* ============================================================
+   Student Dues — Premium Professional Design
+   VeLearn | payments-student_dues.css
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ---------- Design Tokens ---------- */
+:root {
+  --sd-bg:            #f0f4f9;
+  --sd-card:          #ffffff;
+  --sd-border:        #e2e8f0;
+  --sd-text:          #0f172a;
+  --sd-text-muted:    #64748b;
+  --sd-text-light:    #94a3b8;
+  --sd-primary:       #4f46e5;
+  --sd-primary-light: #eef2ff;
+  --sd-primary-dark:  #3730a3;
+  --sd-success:       #059669;
+  --sd-success-bg:    #d1fae5;
+  --sd-danger:        #dc2626;
+  --sd-danger-bg:     #fee2e2;
+  --sd-warning:       #d97706;
+  --sd-warning-bg:    #fef3c7;
+  --sd-accent:        #6366f1;
+  --sd-shadow-sm:     0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --sd-shadow-md:     0 4px 16px rgba(0,0,0,.08);
+  --sd-shadow-lg:     0 8px 32px rgba(79,70,229,.12);
+  --sd-radius:        14px;
+  --sd-radius-sm:     8px;
+  --sd-transition:    .2s cubic-bezier(.4,0,.2,1);
+}
+
+/* ---------- Page Wrapper ---------- */
+.payments-page {
+  font-family: 'Inter', sans-serif;
+  padding: 28px 32px;
+  background: var(--sd-bg);
+  min-height: calc(100vh - 60px);
+  color: var(--sd-text);
+}
+
+/* ---------- Page Header ---------- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-title h3 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--sd-text);
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--sd-warning);
+  background: var(--sd-warning-bg);
+  border: 1px solid #fde68a;
+  padding: 4px 12px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+/* ---------- Stats Row ---------- */
+.dues-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--sd-card);
+  border: 1px solid var(--sd-border);
+  border-radius: var(--sd-radius);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--sd-shadow-sm);
+  transition: box-shadow var(--sd-transition), transform var(--sd-transition);
+}
+
+.stat-card:hover {
+  box-shadow: var(--sd-shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.stat-icon.purple  { background: #ede9fe; color: #7c3aed; }
+.stat-icon.orange  { background: #fff7ed; color: #ea580c; }
+.stat-icon.red     { background: #fee2e2; color: #dc2626; }
+.stat-icon.green   { background: #d1fae5; color: #059669; }
+
+.stat-info .stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--sd-text);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.stat-info .stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sd-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- Main Card ---------- */
+.payments-table-card {
+  background: var(--sd-card);
+  border: 1px solid var(--sd-border);
+  border-radius: var(--sd-radius);
+  box-shadow: var(--sd-shadow-sm);
+  overflow: hidden;
+}
+
+/* ---------- Table Toolbar ---------- */
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--sd-border);
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #fafbfd;
+}
+
+.table-header h5 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sd-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-header h5::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(to bottom, var(--sd-primary), var(--sd-accent));
+  border-radius: 4px;
+}
+
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-wrapper .search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sd-text-muted);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.search-input {
+  background: #f1f5f9;
+  border: 1.5px solid var(--sd-border);
+  border-radius: 10px;
+  padding: 9px 14px 9px 36px;
+  font-size: 0.8rem;
+  color: var(--sd-text);
+  width: 240px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color var(--sd-transition), box-shadow var(--sd-transition);
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--sd-text-light);
+}
+
+.search-input:focus {
+  border-color: var(--sd-primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+}
+
+.btn-search {
+  background: linear-gradient(135deg, var(--sd-primary) 0%, var(--sd-accent) 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity var(--sd-transition), transform var(--sd-transition), box-shadow var(--sd-transition);
+  box-shadow: 0 2px 8px rgba(79,70,229,.3);
+}
+
+.btn-search:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(79,70,229,.4);
+}
+
+/* ---------- Table ---------- */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.table thead tr {
+  background: #f8fafc;
+}
+
+.table thead th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--sd-text-muted);
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--sd-border);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  transition: background var(--sd-transition);
+}
+
+.table tbody tr:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table tbody tr:hover {
+  background: #f8f9ff;
+}
+
+.table tbody td {
+  padding: 14px 20px;
+  vertical-align: middle;
+  font-size: 0.82rem;
+  color: var(--sd-text);
+}
+
+/* ---------- Student Profile Cell ---------- */
+.student-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+.fw-bold.text-dark {
+  font-weight: 700 !important;
+  color: var(--sd-text) !important;
+  font-size: 0.84rem;
+}
+
+.text-muted.smaller,
+.smaller {
+  font-size: 0.72rem;
+  color: var(--sd-text-muted) !important;
+  margin-top: 2px;
+  display: block;
+}
+
+/* ---------- Course/Batch ---------- */
+.fw-semibold.small {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--sd-text);
+}
+
+/* ---------- Amount ---------- */
+.amount-text {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--sd-primary);
+  letter-spacing: -0.3px;
+}
+
+/* ---------- Status Badges ---------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.pill-pending {
+  background: #fef9c3;
+  color: #a16207;
+  border: 1.5px solid #fde047;
+}
+
+.pill-paid {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1.5px solid #6ee7b7;
+}
+
+.pill-failed {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1.5px solid #fca5a5;
+}
+
+/* Overdue badge */
+.badge.bg-danger {
+  background: var(--sd-danger-bg) !important;
+  color: var(--sd-danger) !important;
+  border: 1px solid #fca5a5;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ---------- Action Button ---------- */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 9px;
+  padding: 7px 16px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--sd-transition);
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-blue-soft {
+  background: var(--sd-primary-light);
+  color: var(--sd-primary);
+  border: 1.5px solid #c7d2fe;
+}
+
+.btn-blue-soft:hover {
+  background: var(--sd-primary);
+  color: #fff;
+  border-color: var(--sd-primary);
+  box-shadow: 0 4px 12px rgba(79,70,229,.3);
+  transform: translateY(-1px);
+}
+
+/* ---------- Empty State ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  text-align: center;
+}
+
+.empty-state .empty-icon {
+  width: 70px;
+  height: 70px;
+  background: #d1fae5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-state .empty-icon i {
+  font-size: 1.8rem;
+  color: var(--sd-success);
+}
+
+.empty-state h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--sd-text);
+  margin: 0 0 6px;
+}
+
+.empty-state p.text-muted {
+  font-size: 0.82rem;
+  color: var(--sd-text-muted) !important;
+  margin: 0;
+}
+
+/* ---------- Pagination ---------- */
+.pagination-wrapper {
+  padding: 16px 24px;
+  border-top: 1px solid var(--sd-border);
+  background: #fafbfd;
+}
+
+.pagination-wrapper .pagination {
+  margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .payments-page {
+    padding: 16px;
+  }
+  .dues-stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .search-input {
+    width: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dues-stats-row {
+    grid-template-columns: 1fr;
+  }
+}

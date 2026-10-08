@@ -1,0 +1,254 @@
+.call-card {
+    background: #fff;
+}
+
+.call-row {
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.call-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.call-icon.outgoing-received {
+    background: #1e88e5;
+}
+
+.call-icon.outgoing-missed {
+    background: #f39c12;
+}
+
+.call-icon.incoming-missed {
+    background: #ff6b6b;
+}
+
+.call-icon.incoming-received {
+    background: #3f51b5;
+}
+
+.caller-name {
+    font-weight: 600;
+}
+
+.caller-name .agent {
+    color: #1e88e5;
+    margin-left: 6px;
+}
+
+.call-meta {
+    font-size: 13px;
+    color: #777;
+}
+
+.call-time {
+    font-size: 14px;
+    color: #555;
+}
+
+.call-info {
+    padding: 14px;
+    /* background: #fafafa; */
+    font-size: 12px;
+}
+
+.call-info div {
+    width: 23%;
+}
+
+.call-actions {
+    padding: 10px 14px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    font-size: 11px;
+    background-color: #e6e6e6;
+}
+
+.call-actions span {
+    cursor: pointer;
+}
+
+.call-actions span:hover {
+    color: #1e88e5;
+}
+
+.call-detail {
+    padding: 14px;
+    background: #111;
+    color: #0f0;
+    font-size: 12px;
+    overflow-x: auto;
+}
+
+.call-details-wrapper {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+span.agent {
+    color: #00a9c0;
+}
+
+.text-strike {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.call-audio-player {
+    width: 220px;
+    /* ✅ adjust as needed */
+    height: 32px;
+    /* ✅ works in Chrome / Edge */
+    max-width: 100%;
+    outline: none;
+}
+
+/* Chrome / Edge / Safari */
+.call-audio-player::-webkit-media-controls-panel {
+    height: 32px;
+}
+
+/* Optional: make it compact */
+.call-audio-player::-webkit-media-controls-timeline {
+    height: 4px;
+}
+
+input#searchInput {
+    height: 35px;
+}
+
+.action-btn {
+    height: 35px;
+}
+
+.call-icon.voicemail {
+    background: #ffc107;
+    color: #000;
+}
+
+.call-source-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 12px;
+    background: #e6f7fa;
+    color: #008c9e;
+    width: fit-content;
+}
+
+/* Firefox fallback */
+@supports (-moz-appearance: none) {
+    .call-audio-player {
+        height: 32px;
+    }
+}
+
+/* ============================
+   MOBILE RESPONSIVE FIX
+   ============================ */
+@media (max-width: 768px) {
+
+    /* Header row */
+    .call-header {
+        display: none !important;
+    }
+
+    /* Card spacing */
+    .call-card {
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+
+    /* Main row */
+    .call-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px;
+        padding: 10px !important;
+    }
+
+    /* WHO / WHAT / WHEN stack */
+    .call-row>div {
+        width: 100% !important;
+    }
+
+    /* Caller section */
+    .caller-name {
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    /* Meta text */
+    .call-meta {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    /* Time */
+    .call-time {
+        font-size: 12px;
+        color: #666;
+        text-align: right;
+        width: 100%;
+    }
+
+    /* Icon */
+    .call-icon {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+    }
+
+    /* Details wrapper */
+    .call-info {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px !important;
+    }
+
+    .call-info div {
+        width: 100% !important;
+    }
+
+    /* Audio player */
+    .call-audio-player {
+        width: 100% !important;
+        height: 32px;
+    }
+
+    /* Agent names wrap */
+    span.agent {
+        display: inline-block;
+        margin: 2px 4px 0 0;
+    }
+}
+
+/* Remove Bootstrap caret */
+.action-btn::after {
+    display: none !important;
+}
+
+/* Button remains clean icon-only */
+.action-btn {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+

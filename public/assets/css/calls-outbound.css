@@ -1,0 +1,221 @@
+:root {
+        --light-bg: #f8f9fa;
+        --card-bg: #ffffff;
+        --border-color: #e5e7eb;
+        --text-muted: #6b7280;
+        --text-dark: #111827;
+        --primary-blue: #3b82f6;
+    }
+
+    .leads-container {
+        color: var(--text-dark);
+        padding: 8px;
+        min-height: 100vh;
+    }
+
+    .leads-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .leads-header p {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .search-filter-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        align-items: center;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 0 0 250px;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-blue);
+    }
+
+    .search-box input {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 12px 8px 35px;
+        color: var(--text-dark);
+        width: 100%;
+        font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+        color: #9ca3af;
+    }
+
+    .tag-filter select {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 30px 8px 15px;
+        color: var(--text-dark);
+        font-size: 14px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        min-width: 120px;
+    }
+
+    .btn-add-lead {
+        background-color: var(--primary-blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 20px;
+        font-weight: 600;
+        margin-left: auto;
+        transition: all 0.2s;
+    }
+
+    .btn-add-lead:hover {
+        background-color: #2563eb;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .leads-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .leads-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .leads-table th {
+        background-color: transparent;
+        border-bottom: 1px solid var(--border-color);
+        color: #4b5563;
+        text-transform: uppercase;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 15px 20px;
+        text-align: left;
+    }
+
+    .leads-table td {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+    }
+
+    .leads-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .leads-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .text-id {
+        color: #4b5563;
+    }
+
+    .text-name {
+        color: var(--primary-blue);
+        font-weight: 600;
+    }
+
+    .tag-badge {
+        background-color: #f3f4f6;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        color: var(--primary-blue);
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .leads-card {
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    /* Pagination Styling */
+    #pagination-container {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 1.5rem;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .pagination .page-item .page-link {
+        border-radius: 8px !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-dark) !important;
+        padding: 8px 14px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+        background-color: var(--card-bg) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: var(--light-bg) !important;
+        border-color: #d1d5db !important;
+        color: var(--primary-blue) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-blue) !important;
+        border-color: var(--primary-blue) !important;
+        color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4), 0 2px 4px -1px rgba(59, 130, 246, 0.2) !important;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #9ca3af !important;
+        background-color: #f3f4f6 !important;
+        border-color: var(--border-color) !important;
+        cursor: not-allowed !important;
+    }
+
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        border-radius: 8px !important; /* Force rounding on edges since bootstrap removes it */
+    }
+
+    /* Improved row hover */
+    .leads-table tr {
+        transition: background-color 0.15s ease;
+    }
+
+    .leads-table tr:hover {
+        background-color: #f8fafc; /* slightly blueish gray */
+    }

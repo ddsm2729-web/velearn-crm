@@ -1,0 +1,162 @@
+.leads-container {
+        color: var(--text-dark);
+        min-height: 100vh;
+    }
+
+    .search-box input {
+        background: #ffffff !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-dark) !important;
+        padding-left: 45px !important;
+    }
+
+    .search-box input::placeholder {
+        color: #9ca3af;
+    }
+
+    .filter-select {
+        background: #ffffff !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-dark) !important;
+        cursor: pointer;
+    }
+
+    .lead-card {
+        background: #FFF;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border-color);
+        border-left: 4px solid transparent;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .lead-card.border-hot { border-left-color: #ef4444; }
+    .lead-card.border-warm { border-left-color: #f59e0b; }
+    .lead-card.border-cold { border-left-color: #3b82f6; }
+    .lead-card.border-contacted { border-left-color: #10b981; }
+    .lead-card.border-booked { border-left-color: #8b5cf6; }
+    .lead-card.border-attended { border-left-color: #14b8a6; }
+    .lead-card.border-converted { border-left-color: #059669; }
+    .lead-card.border-lost { border-left-color: #6b7280; }
+
+    .lead-card:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 15px;
+    }
+
+    .dot-pending { 
+        background-color: #ef4444; 
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+        animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+
+    .pending-highlight {
+        background-color: #fff1f2 !important;
+        border-color: #fecaca !important;
+    }
+
+    .tag-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .tag-hot { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .tag-warm { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .tag-cold { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .tag-contacted { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .tag-booked { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .tag-attended { background: rgba(20, 184, 166, 0.1); color: #14b8a6; }
+    .tag-converted { background: rgba(16, 185, 129, 0.2); color: #059669; }
+    .tag-lost { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+
+    .source-badge {
+        background: rgba(100, 116, 139, 0.1);
+        border: none;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .pagination .page-link {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        color: var(--text-dark);
+        margin: 0 4px;
+        border-radius: 6px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    @media (max-width: 768px) {
+        .lead-card {
+            flex-direction: column;
+            align-items: flex-start !important;
+            padding: 15px;
+        }
+
+        .lead-card > .d-flex:last-child {
+            width: 100%;
+            flex-direction: row-reverse;
+            justify-content: space-between !important;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            gap: 10px !important;
+        }
+
+        .lead-card .text-end {
+            text-align: left !important;
+        }
+
+        .search-box {
+            width: 100% !important;
+        }
+
+        .search-filter-row {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .filter-select {
+            width: 100% !important;
+        }
+    }

@@ -1,0 +1,267 @@
+    :root {
+        --bg-gray: #f8fafc;
+        --card-bg: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --brand-blue: #3b82f6;
+        --brand-indigo: #6366f1;
+        
+        --accent-orange: #f59e0b;
+        --accent-pink: #ec4899;
+        --accent-green: #10b981;
+        --accent-purple: #8b5cf6;
+    }
+
+    /* Page Header */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+    .page-title span {
+        font-weight: 400;
+        color: var(--text-secondary);
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding: 0.35rem 1rem 0.35rem 2.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: #fff;
+        width: 250px;
+        font-size: 0.85rem;
+    }
+    .search-box i {
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--brand-blue);
+    }
+    
+    .btn-quick-action {
+        background: var(--brand-indigo);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .btn-quick-action:hover {
+        background: #4f46e5;
+        color: #fff;
+    }
+
+    /* Main Container */
+    .main-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-heading {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+    }
+    .section-heading i {
+        color: var(--accent-orange);
+    }
+    
+    .btn-staff-meeting {
+        background: #e0e7ff;
+        color: var(--brand-indigo);
+        border: 1px solid var(--brand-indigo);
+        border-radius: 8px;
+        padding: 0.35rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-staff-meeting:hover {
+        background: var(--brand-indigo);
+        color: #fff;
+    }
+
+    /* Table Styles */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .staff-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .staff-table th {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        text-align: left;
+        letter-spacing: 0.5px;
+    }
+    .staff-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    .staff-table tr:last-child td {
+        border-bottom: none;
+    }
+    .staff-table tbody tr {
+        transition: background-color 0.2s;
+    }
+    .staff-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    /* User Profile Cell */
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #fff;
+    }
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .user-name {
+        font-weight: 700;
+        color: var(--brand-blue);
+        font-size: 0.95rem;
+        margin-bottom: 0.15rem;
+    }
+    .user-email {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    
+    /* Course Pills */
+    .tech-batch-wrapper {
+        padding: 0.5rem;
+    }
+    
+    @media (max-width: 575.98px) {
+        .tech-batch-wrapper {
+            padding: 0.5rem;
+        }
+    }
+    .course-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .course-pill.fs { background: #eff6ff; color: var(--brand-blue); }
+    .course-pill.ux { background: #fdf2f8; color: var(--accent-pink); }
+    .course-pill.dm { background: #fffbeb; color: var(--accent-orange); }
+    .course-pill.ds { background: #ecfdf5; color: var(--accent-green); }
+    
+    .batch-count {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* Progress Bar Cell */
+    .progress-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .progress-track {
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        position: relative;
+        flex-grow: 1;
+        min-width: 80px;
+        max-width: 120px;
+    }
+    .progress-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        border-radius: 3px;
+    }
+    .progress-text {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        min-width: 35px;
+    }
+    
+    /* Status Cell */
+    .status-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    .status-dot.active { background-color: var(--accent-green); }
+    .status-dot.leave { background-color: var(--accent-orange); }
