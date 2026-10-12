@@ -208,4 +208,164 @@ class ZoomService
             return false;
         }
     }
+
+    /**
+     * Get details for a meeting
+     *
+     * @param string $meetingId
+     * @return array|null
+     */
+    public function getMeetingDetails($meetingId)
+    {
+        $token = $this->getAccessToken();
+        if (!$token || !$meetingId) return null;
+
+        try {
+            $response = Http::withToken($token)
+                ->get($this->baseUrl . 'meetings/' . urlencode($meetingId));
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error("Zoom Get Meeting Details Error ({$meetingId}): " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("Zoom Get Meeting Details Exception ({$meetingId}): " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get past meeting details (including actual duration, start_time, end_time)
+     * Refer: Zoom API GET /past_meetings/{meetingId}
+     *
+     * @param string $meetingId
+     * @return array|null
+     */
+    public function getPastMeetingDetails($meetingId)
+    {
+        $token = $this->getAccessToken();
+        if (!$token || !$meetingId) return null;
+
+        try {
+            $response = Http::withToken($token)
+                ->get($this->baseUrl . 'past_meetings/' . urlencode($meetingId));
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            // Fallback to standard meeting details if past_meetings endpoint isn't ready
+            return $this->getMeetingDetails($meetingId);
+        } catch (\Exception $e) {
+            Log::error("Zoom Get Past Meeting Details Exception ({$meetingId}): " . $e->getMessage());
+            return $this->getMeetingDetails($meetingId);
+        }
+    }
+
+    /**
+     * Get meeting participants with pagination support
+     * Refer: Zoom API GET /report/meetings/{meetingId}/participants
+     * and fallback to GET /past_meetings/{meetingId}/participants
+     *
+     * @param string $meetingId
+     * @return array List of participant records
+     */
+    public function getMeetingParticipants($meetingId)
+    {
+        $token = $this->getAccessToken();
+        if (!$token || !$meetingId) {
+            return [];
+        }
+
+        $allParticipants = [];
+        $encodedMeetingId = urlencode($meetingId);
+
+        // 1. First attempt: Report API (/report/meetings/{meetingId}/participants)
+        $nextPageToken = null;
+        $useReportEndpoint = true;
+
+        do {
+            try {
+                $params = ['page_size' => 300];
+                if (!empty($nextPageToken)) {
+                    $params['next_page_token'] = $nextPageToken;
+                }
+
+                $response = Http::withToken($token)
+                    ->get($this->baseUrl . 'report/meetings/' . $encodedMeetingId . '/participants', $params);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $participants = $data['participants'] ?? [];
+                    $allParticipants = array_merge($allParticipants, $participants);
+                    $nextPageToken = $data['next_page_token'] ?? null;
+                } else {
+                    Log::warning("Zoom Report API participants returned status " . $response->status() . " for {$meetingId}: " . $response->body());
+                    $useReportEndpoint = false;
+                    break;
+                }
+            } catch (\Exception $e) {
+                Log::error("Zoom Report API participants exception for {$meetingId}: " . $e->getMessage());
+                $useReportEndpoint = false;
+                break;
+            }
+        } while (!empty($nextPageToken));
+
+        // If report endpoint succeeded and fetched participants, return them
+        if ($useReportEndpoint && !empty($allParticipants)) {
+            return $allParticipants;
+        }
+
+        // 2. Fallback attempt: Past Meetings API (/past_meetings/{meetingId}/participants)
+        $nextPageToken = null;
+        $pastParticipants = [];
+
+        do {
+            try {
+                $params = ['page_size' => 300];
+                if (!empty($nextPageToken)) {
+                    $params['next_page_token'] = $nextPageToken;
+                }
+
+                $response = Http::withToken($token)
+                    ->get($this->baseUrl . 'past_meetings/' . $encodedMeetingId . '/participants', $params);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $participants = $data['participants'] ?? [];
+                    $pastParticipants = array_merge($pastParticipants, $participants);
+                    $nextPageToken = $data['next_page_token'] ?? null;
+                } else {
+                    Log::error("Zoom Past Meeting API participants failed for {$meetingId}: " . $response->body());
+                    break;
+                }
+            } catch (\Exception $e) {
+                Log::error("Zoom Past Meeting API participants exception for {$meetingId}: " . $e->getMessage());
+                break;
+            }
+        } while (!empty($nextPageToken));
+
+        return !empty($pastParticipants) ? $pastParticipants : $allParticipants;
+    }
+
+    /**
+     * Validate Zoom Webhook Event URL (CRC Challenge)
+     * Zoom requires endpoint to return hash_hmac('sha256', plainToken, secretToken)
+     *
+     * @param string $plainToken
+     * @return array
+     */
+    public function generateWebhookTokenResponse($plainToken)
+    {
+        $secretToken = env('ZOOM_WEBHOOK_SECRET_TOKEN', env('ZOOM_CLIENT_SECRET'));
+        $encryptedToken = hash_hmac('sha256', $plainToken, $secretToken);
+
+        return [
+            'plainToken' => $plainToken,
+            'encryptedToken' => $encryptedToken,
+        ];
+    }
 }
+

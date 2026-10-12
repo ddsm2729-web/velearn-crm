@@ -423,6 +423,55 @@ class AuthController extends Controller
         }
     }
 
+    public function changePassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required',
+                'current_password' => 'required',
+                'new_password' => 'required|min:6',
+                'confirm_password' => 'required|same:new_password'
+            ]);
+
+            $user = User::find($request->user_id);
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Current password does not match'
+                ], 400);
+            }
+
+            $user->update(['password' => Hash::make($request->new_password)]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password changed successfully!'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('ChangePassword Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getProfile(Request $request)
     {
         try {

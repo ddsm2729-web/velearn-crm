@@ -688,14 +688,17 @@ class CourseAPIController extends Controller
                 // Fetch course for type checking
                 $course = Course::findOrFail($courseId);
 
+                // Always attach course to lead so it appears in Assigned Courses in the CRM
+                $lead->courses()->syncWithoutDetaching([$courseId]);
+
                 // Determine initial status
                 $status = 'inactive';
                 if ($course->course_type === 'free') {
                     $status = 'ongoing';
                 }
 
-                // If paid, we create a pending admission and return Razorpay order
-                if ($course->course_type !== 'free' && $course->buy_price > 0) {
+                // If paid recorded/combo course, we create a pending admission and return Razorpay order (live courses are handled below)
+                if ($course->course_type !== 'free' && $course->course_type !== 'live' && $course->buy_price > 0) {
                     if ($existingEnrollment) {
                         $enrollment = $existingEnrollment;
                         $enrollment->update(['status' => 'pending']);
@@ -779,7 +782,7 @@ class CourseAPIController extends Controller
                     ], 200);
                 }
 
-                // For free courses (or if buy_price is 0 for some reason)
+                // For free and live courses (or if buy_price is 0 for some reason)
                 if ($existingEnrollment) {
                     $enrollment = $existingEnrollment;
                     $enrollment->update(['status' => $status]);
@@ -790,9 +793,6 @@ class CourseAPIController extends Controller
                         'status' => $status,
                     ]);
                 }
-
-                // Attach course to lead
-                $lead->courses()->syncWithoutDetaching([$courseId]);
 
                 // For live courses, create an Admission record and a CallLog entry
                 if ($course->course_type === 'live') {
@@ -815,13 +815,20 @@ class CourseAPIController extends Controller
                         'staff_id' => $lastCallLog ? $lastCallLog->staff_id : null,
                     ]);
 
-                    Admission::create([
-                        'contact_id' => $contact->id,
-                        'course_id' => $courseId,
-                        'course_fees' => $course->buy_price ?? 0,
-                        'payment_mode' => 'online',
-                        'status' => $status === 'ongoing' ? 'ongoing' : 'pending',
-                    ]);
+                    $admission = Admission::where('lead_id', $lead->id)
+                        ->where('course_id', $courseId)
+                        ->first();
+
+                    if (! $admission) {
+                        Admission::create([
+                            'contact_id' => $contact->id,
+                            'lead_id' => $lead->id,
+                            'course_id' => $courseId,
+                            'course_fees' => $course->buy_price ?? 0,
+                            'payment_mode' => 'online',
+                            'status' => $status === 'ongoing' ? 'ongoing' : 'pending',
+                        ]);
+                    }
                 }
 
                 return response()->json([

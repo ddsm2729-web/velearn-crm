@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\WebinarController;
 use App\Http\Controllers\SupportApiController;
@@ -40,10 +40,17 @@ Route::get('/call-recording/{id}', [WebhookController::class, 'getRecording']);
 // Razorpay Webhook
 Route::post('/razorpay/webhook', [\App\Http\Controllers\PaymentController::class, 'webhook']);
 
+// Zoom Webhook & Attendance API
+Route::post('/zoom/webhook', [\App\Http\Controllers\ZoomAttendanceController::class, 'handleWebhook']);
+Route::post('/zoom/attendance/process', [\App\Http\Controllers\ZoomAttendanceController::class, 'processAttendance']);
+Route::get('/batch/{batchId}/attendance', [\App\Http\Controllers\ZoomAttendanceController::class, 'getBatchAttendance']);
+Route::get('/student/{userId}/attendance', [\App\Http\Controllers\ZoomAttendanceController::class, 'getStudentAttendance']);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/change-password', [AuthController::class, 'changePassword']);
 Route::post('/update-logo', [AuthController::class, 'updateLogo']);
 Route::post('/update-fcm-token', [AuthController::class, 'updateFcmToken']);
 Route::post('/test-notification', [AuthController::class, 'testNotification']);
@@ -114,3 +121,8 @@ Route::post('placement/{userId}/profile/resume', [\App\Http\Controllers\Placemen
 Route::post('placement/{userId}/profile/portfolio', [\App\Http\Controllers\PlacementProfileController::class, 'updatePortfolio']);
 Route::post('placement/{userId}/profile/github', [\App\Http\Controllers\PlacementProfileController::class, 'updateGithub']);
 Route::post('placement/{userId}/profile/project-docs', [\App\Http\Controllers\PlacementProfileController::class, 'uploadProjectDocs']);
+
+// Contact Info - API
+Route::prefix('contacts')->group(function () {
+    Route::post('/send-mail', [ContactController::class, 'sendMail']);
+});

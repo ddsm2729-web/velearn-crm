@@ -42,11 +42,12 @@ class MainProjectController extends Controller implements HasMiddleware
         return view('main_projects.index', compact('main_projects', 'liveCourses', 'batches'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $courses = Course::where('course_type', 'live')->get();
         $batches = Batch::all();
-        return view('main_projects.create', compact('courses', 'batches'));
+        $selectedCourseId = $request->query('course_id');
+        return view('main_projects.create', compact('courses', 'batches', 'selectedCourseId'));
     }
 
     public function store(Request $request)

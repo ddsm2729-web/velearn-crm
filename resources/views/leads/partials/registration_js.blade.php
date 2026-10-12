@@ -15,41 +15,57 @@
         }
 
         // --- Course and Batch Selection Logic ---
-        $('.course-selection').on('change', function() {
-            let courseId = $(this).val();
+        function loadBatches(courseId, preselectedBatchId = null) {
             let $batchSelect = $('.batch-selection');
             let $feesInput = $('input[name="course_fees"]');
             
-            // Set default fees based on selected course
-            if (courseId) {
-                let defaultFees = $(this).find('option:selected').data('fees');
-                $feesInput.val(defaultFees);
-                $batchSelect.prop('disabled', false).html('<option value="">Loading batches...</option>');
+            if (!courseId) {
+                $batchSelect.prop('disabled', true).html('<option value="">Select Batch</option>');
+                return;
+            }
 
-                // Fetch batches for this course
-                $.ajax({
-                    url: `/courses/${courseId}/batches`, // Verify this endpoint exists
-                    type: 'GET',
-                    success: function(res) {
-                        let options = '<option value="">Select Batch</option>';
-                        if (res.status && res.data.length > 0) {
-                            res.data.forEach(function(batch) {
-                                let label = `${batch.batch_code} - ${batch.batch_name}`;
-                                options += `<option value="${batch.id}" data-code="${batch.batch_code}" data-type="${batch.batch_type}">${label}</option>`;
-                            });
-                        } else {
-                            options = '<option value="">No active batches found</option>';
-                        }
-                        $batchSelect.html(options);
-                    },
-                    error: function() {
+            let defaultFees = $('.course-selection').find('option:selected').data('fees');
+            if (!$feesInput.val() && defaultFees) {
+                $feesInput.val(defaultFees);
+            }
+
+            let selectedBatchId = preselectedBatchId || $batchSelect.data('selected') || $batchSelect.val();
+
+            $batchSelect.prop('disabled', false);
+
+            $.ajax({
+                url: `/courses/${courseId}/batches`,
+                type: 'GET',
+                success: function(res) {
+                    let options = '<option value="">Select Batch</option>';
+                    if (res.status && res.data.length > 0) {
+                        res.data.forEach(function(batch) {
+                            let label = `${batch.batch_code} - ${batch.batch_name}`;
+                            let isSelected = String(selectedBatchId) === String(batch.id) ? 'selected' : '';
+                            options += `<option value="${batch.id}" data-code="${batch.batch_code}" data-type="${batch.batch_type}" ${isSelected}>${label}</option>`;
+                        });
+                    } else {
+                        options = '<option value="">No active batches found</option>';
+                    }
+                    $batchSelect.html(options);
+
+                    if ($batchSelect.val()) {
+                        $batchSelect.trigger('change');
+                    }
+                },
+                error: function() {
+                    if ($batchSelect.find('option').length <= 1) {
                         $batchSelect.html('<option value="">Error loading batches</option>');
                     }
-                });
-            } else {
-                $batchSelect.prop('disabled', true).html('<option value="">Select Batch</option>');
-                $feesInput.val('');
-            }
+                }
+            });
+        }
+
+        $('.course-selection').on('change', function() {
+            let courseId = $(this).val();
+            let defaultFees = $(this).find('option:selected').data('fees');
+            $('input[name="course_fees"]').val(defaultFees || '');
+            loadBatches(courseId);
         });
 
         // Auto-select batch type when batch is chosen
@@ -59,6 +75,12 @@
                 $('select[name="batch_type"]').val(type);
             }
         });
+
+        // Initialize batches on page load if course is selected but batches not loaded
+        let initialCourseId = $('.course-selection').val();
+        if (initialCourseId && $('.batch-selection option').length <= 1) {
+            loadBatches(initialCourseId, $('.batch-selection').data('selected'));
+        }
 
         // --- Payment Mode Logic ---
         function updatePaymentTabs(mode) {
@@ -102,6 +124,11 @@
             $(this).addClass('d-none');
             $('#fee-collection-locked').removeClass('d-none');
             $('#fee-collection-unlocked').addClass('d-none');
+
+            let courseId = $('.course-selection').val();
+            if (courseId && $('.batch-selection option').length <= 1) {
+                loadBatches(courseId, $('.batch-selection').data('selected'));
+            }
         });
 
         // Save Admission Details (Registration)
@@ -204,11 +231,7 @@
         // Save Single Payment
         $('#save-single-payment-btn').on('click', function(e) {
             e.preventDefault();
-            let admissionId = $('#admission_id_hidden').val();
-            if (!admissionId) {
-                toastr.error('Please save admission details first.');
-                return;
-            }
+            let $btn = $(this);
 
             let amount = $('#single-amount').val();
             let date = $('#single-date').val();
@@ -218,46 +241,79 @@
                 return;
             }
 
-            let $btn = $(this);
-            $.ajax({
-                url: `/fee`, // Warning: Make sure this route is available in your routes file
-                type: 'POST',
-                data: {
-                    admission_id: admissionId,
-                    type: 'single',
-                    amount: amount,
-                    payment_date: date,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                beforeSend: function() {
-                    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
-                },
-                success: function(res) {
-                    if(res.status) {
-                        toastr.success(res.message || 'Payment recorded successfully!');
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        toastr.error(res.message || 'Error recording payment.');
+            function doSaveSinglePayment(admissionId) {
+                $.ajax({
+                    url: `/fee`,
+                    type: 'POST',
+                    data: {
+                        admission_id: admissionId,
+                        type: 'single',
+                        amount: amount,
+                        payment_date: date,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+                    },
+                    success: function(res) {
+                        if(res.status) {
+                            toastr.success(res.message || 'Payment recorded successfully!');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            toastr.error(res.message || 'Error recording payment.');
+                            $btn.prop('disabled', false).html('Save');
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Something went wrong.';
+                        if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        toastr.error(msg);
                         $btn.prop('disabled', false).html('Save');
                     }
-                },
-                error: function(xhr) {
-                    let msg = 'Something went wrong.';
-                    if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
-                    toastr.error(msg);
-                    $btn.prop('disabled', false).html('Save');
-                }
-            });
+                });
+            }
+
+            let admissionId = $('#admission_id_hidden').val();
+            if (admissionId) {
+                doSaveSinglePayment(admissionId);
+            } else {
+                // Auto-save admission first, then save payment
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+                $.ajax({
+                    url: `/admission`,
+                    type: 'POST',
+                    data: {
+                        lead_id: {{ $lead->id }},
+                        course_id: $('select[name="course_id"]').val(),
+                        batch_id: $('select[name="batch_id"]').val(),
+                        batch_type: $('select[name="batch_type"]').val(),
+                        course_fees: $('input[name="course_fees"]').val(),
+                        payment_mode: $('select[name="payment_mode"]').val(),
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(res) {
+                        if (res.status && res.admission_id) {
+                            $('#admission_id_hidden').val(res.admission_id);
+                            doSaveSinglePayment(res.admission_id);
+                        } else {
+                            toastr.error(res.message || 'Failed to save admission. Please try again.');
+                            $btn.prop('disabled', false).html('Save');
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Failed to save admission details.';
+                        if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        toastr.error(msg);
+                        $btn.prop('disabled', false).html('Save');
+                    }
+                });
+            }
         });
 
         // Save Split Payments
         $('#save-split-payments-btn').on('click', function(e) {
             e.preventDefault();
-            let admissionId = $('#admission_id_hidden').val();
-            if (!admissionId) {
-                toastr.error('Please save admission details first.');
-                return;
-            }
+            let $btn = $(this);
 
             let payments = [];
             let isValid = true;
@@ -278,35 +334,72 @@
                 return;
             }
 
-            let $btn = $(this);
-            $.ajax({
-                url: `/fee`, // Warning: Make sure this route is available in your routes file
-                type: 'POST',
-                data: {
-                    admission_id: admissionId,
-                    type: 'split',
-                    payments: payments,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                beforeSend: function() {
-                    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
-                },
-                success: function(res) {
-                    if(res.status) {
-                        toastr.success(res.message || 'Split payments recorded successfully!');
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        toastr.error(res.message || 'Error recording payments.');
+            function doSaveSplitPayments(admissionId) {
+                $.ajax({
+                    url: `/fee`,
+                    type: 'POST',
+                    data: {
+                        admission_id: admissionId,
+                        type: 'split',
+                        payments: payments,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+                    },
+                    success: function(res) {
+                        if(res.status) {
+                            toastr.success(res.message || 'Split payments recorded successfully!');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            toastr.error(res.message || 'Error recording payments.');
+                            $btn.prop('disabled', false).text('Save All');
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Something went wrong.';
+                        if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        toastr.error(msg);
                         $btn.prop('disabled', false).text('Save All');
                     }
-                },
-                error: function(xhr) {
-                    let msg = 'Something went wrong.';
-                    if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
-                    toastr.error(msg);
-                    $btn.prop('disabled', false).text('Save All');
-                }
-            });
+                });
+            }
+
+            let admissionId = $('#admission_id_hidden').val();
+            if (admissionId) {
+                doSaveSplitPayments(admissionId);
+            } else {
+                // Auto-save admission first, then save split payments
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+                $.ajax({
+                    url: `/admission`,
+                    type: 'POST',
+                    data: {
+                        lead_id: {{ $lead->id }},
+                        course_id: $('select[name="course_id"]').val(),
+                        batch_id: $('select[name="batch_id"]').val(),
+                        batch_type: $('select[name="batch_type"]').val(),
+                        course_fees: $('input[name="course_fees"]').val(),
+                        payment_mode: $('select[name="payment_mode"]').val(),
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(res) {
+                        if (res.status && res.admission_id) {
+                            $('#admission_id_hidden').val(res.admission_id);
+                            doSaveSplitPayments(res.admission_id);
+                        } else {
+                            toastr.error(res.message || 'Failed to save admission. Please try again.');
+                            $btn.prop('disabled', false).text('Save All');
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Failed to save admission details.';
+                        if(xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        toastr.error(msg);
+                        $btn.prop('disabled', false).text('Save All');
+                    }
+                });
+            }
         });
 
         // Generate Link Modal

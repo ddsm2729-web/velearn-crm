@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admission;
+use App\Models\Course;
 use Illuminate\Http\Request;
 
 class CertificateController extends Controller
@@ -9,49 +11,44 @@ class CertificateController extends Controller
     /**
      * Display the Certificate Dispatch page.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Mock data to match the screenshot perfectly
-        $certificates = [
-            [
-                'name' => 'Anitha Murugan',
-                'course' => 'Graphic Design — Advanced',
-                'date' => 'Mar 30, 2026',
-                'grade' => 'Grade A',
-                'status' => 'READY',
-            ],
-            [
-                'name' => 'Suresh Babu',
-                'course' => 'Mechanical Engineering Fundamentals',
-                'date' => 'Apr 02, 2026',
-                'grade' => 'Grade A+',
-                'status' => 'READY',
-            ],
-            [
-                'name' => 'Ravi Shankar',
-                'course' => 'AutoCAD 2D & 3D',
-                'date' => 'Apr 10, 2026',
-                'grade' => 'Grade A',
-                'status' => 'ISSUED',
-            ],
-            [
-                'name' => 'Lakshmi Priya',
-                'course' => 'Civil Engineering Drafting',
-                'date' => 'Apr 15, 2026',
-                'grade' => 'Grade B+',
-                'status' => 'READY',
-            ],
-            [
-                'name' => 'Karthik Raja',
-                'course' => 'AutoCAD Professional',
-                'date' => 'Apr 20, 2026',
-                'grade' => 'Grade B',
-                'status' => 'PENDING',
-            ],
-        ];
+        $courseId = $request->get('course_id');
 
-        $courses = \App\Models\Course::where('status', 1)->get(['id', 'title']);
+        $query = Admission::with(['contact', 'course'])
+            ->whereHas('contact')
+            ->whereHas('course');
 
-        return view('certificates.index', compact('certificates', 'courses'));
+        if ($courseId && $courseId !== 'all') {
+            $query->where('course_id', $courseId);
+        }
+
+        $admissions = $query->latest()->get();
+
+        // Map admission status to certificate dispatch status
+        $certificates = $admissions->map(function ($admission) {
+            $statusMap = [
+                'completed'   => 'ISSUED',
+                'issued'      => 'ISSUED',
+                'active'      => 'READY',
+                'ongoing'     => 'READY',
+                'pending_fee' => 'PENDING',
+                'pending'     => 'PENDING',
+            ];
+            $certStatus = $statusMap[strtolower($admission->status)] ?? 'PENDING';
+
+            return [
+                'id'     => $admission->id,
+                'name'   => $admission->contact->name ?? '—',
+                'course' => $admission->course->title ?? '—',
+                'date'   => $admission->created_at->format('M d, Y'),
+                'grade'  => '—',
+                'status' => $certStatus,
+            ];
+        });
+
+        $courses = Course::where('status', 1)->get(['id', 'title']);
+
+        return view('certificates.index', compact('certificates', 'courses', 'courseId'));
     }
 }

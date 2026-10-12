@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ContactUsMail;
 
 class ContactController extends Controller
 {
@@ -105,6 +107,48 @@ class ContactController extends Controller
         } catch (\Exception $e) {
             Log::error('Error deleting contact: ' . $e->getMessage());
             return response()->json(['status' => 'error', 'message' => 'Failed to delete contact'], 500);
+        }
+    }
+
+    /* SEND CONTACT MAIL ONLY */
+    public function sendMail(Request $request)
+    {
+        $payload = $request->validate([
+            'name'             => 'required|string',
+            'phone_number'     => 'required|string',
+            'email_id'         => 'required|email',
+            'course'           => 'nullable|string',
+            'message'          => 'nullable|string',
+        ]);
+
+        // Send Email Notification via Brevo Mailer
+        try {
+            $adminEmail = env('MAIL_FROM_ADDRESS', 'admin@velearn.in');
+            
+            // Format data for the existing template
+            $mailData = [
+                'name' => $payload['name'],
+                'email_id' => $payload['email_id'],
+                'country_code' => $request->get('country_code', '+91'),
+                'phone_number' => $payload['phone_number'],
+                'custom_fields' => [
+                    'course' => $payload['course'] ?? 'N/A',
+                    'message' => $payload['message'] ?? 'N/A'
+                ]
+            ];
+
+            \Illuminate\Support\Facades\Mail::mailer('brevo')->to($adminEmail)->send(new \App\Mail\ContactUsMail($mailData));
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Mail sent successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send contact email: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

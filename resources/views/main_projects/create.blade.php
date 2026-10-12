@@ -16,7 +16,9 @@
                         <select name="course_id" id="course_id" class="form-control select2" required>
                             <option value="">Select Course</option>
                             @foreach ($courses as $course)
-                                <option value="{{ $course->id }}">{{ $course->title }}</option>
+                                <option value="{{ $course->id }}" {{ (string) old('course_id', $selectedCourseId ?? request('course_id')) === (string) $course->id ? 'selected' : '' }}>
+                                    {{ $course->title }}
+                                </option>
                             @endforeach
                         </select>
                     </div>

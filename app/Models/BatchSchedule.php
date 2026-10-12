@@ -22,4 +22,10 @@ class BatchSchedule extends Model
     {
         return $this->belongsTo(Batch::class);
     }
+
+    public function attendances()
+    {
+        return $this->hasMany(BatchAttendance::class, 'batch_schedule_id');
+    }
 }
+

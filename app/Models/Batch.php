@@ -53,4 +53,10 @@ class Batch extends Model
     {
         return $this->hasMany(BatchSchedule::class);
     }
+
+    public function attendances()
+    {
+        return $this->hasMany(BatchAttendance::class);
+    }
 }
+

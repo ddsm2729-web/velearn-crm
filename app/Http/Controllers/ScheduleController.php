@@ -134,10 +134,9 @@ class ScheduleController extends Controller
     public function getBatchesByCourse($courseId)
     {
         $batches = Batch::where('course_id', $courseId)
-            ->whereIn('status', ['open', 'pending', 'started'])
             ->where(function($q) {
-                $q->whereNull('join_deadline')
-                  ->orWhere('join_deadline', '>=', now()->toDateString());
+                $q->where('batch_status', '!=', 'Completed')
+                  ->orWhereNull('batch_status');
             })
             ->get(['id', 'batch_code', 'batch_name', 'batch_type']);
 

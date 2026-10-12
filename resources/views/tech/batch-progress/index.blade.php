@@ -13,7 +13,7 @@
             <h1 class="page-title">Batch <span>Progress</span></h1>
 
             <div class="header-actions">
-                <button class="btn-export" style="background: var(--card-bg);">
+                <button class="btn-export" style="background: var(--card-bg);" onclick="window.print()">
                     <i class="fas fa-file-excel text-success"></i> Export Report
                 </button>
             </div>
@@ -21,51 +21,56 @@
 
         <div class="filter-tabs">
             <button class="filter-tab active filter-btn" data-filter="all">
-                <i class="fas fa-bolt" style="color: var(--brand-blue)"></i> Full Stack
+                <i class="fas fa-layer-group" style="color: var(--brand-blue)"></i> All Batches ({{ count($batches) }})
             </button>
-            <button class="filter-tab filter-btn" data-filter="uiux">
-                <i class="fas fa-palette" style="color: var(--accent-pink)"></i> UI/UX
-            </button>
-            <button class="filter-tab filter-btn" data-filter="dm">
-                <i class="fas fa-bullhorn" style="color: var(--accent-orange)"></i> Digital Marketing
-            </button>
-            <button class="filter-tab filter-btn" data-filter="ds">
-                <i class="fas fa-chart-bar" style="color: var(--accent-green)"></i> Data Science
-            </button>
+            @foreach($courses as $course)
+                @php
+                    $courseBatchesCount = $batches->where('course_id', $course->id)->count();
+                    $colors = ['var(--brand-blue)', 'var(--accent-pink)', 'var(--accent-orange)', 'var(--accent-green)', 'var(--accent-purple)'];
+                    $icons = ['fa-bolt', 'fa-palette', 'fa-bullhorn', 'fa-chart-bar', 'fa-code'];
+                    $color = $colors[$loop->index % count($colors)];
+                    $icon = $icons[$loop->index % count($icons)];
+                @endphp
+                <button class="filter-tab filter-btn" data-filter="course-{{ $course->id }}">
+                    <i class="fas {{ $icon }}" style="color: {{ $color }}"></i> {{ $course->title }} ({{ $courseBatchesCount }})
+                </button>
+            @endforeach
         </div>
 
         <div class="main-card">
             <div class="section-heading">
-                <i class="fas fa-bolt"></i> Full Stack — Active Batches <span class="badge-count"
-                    style="background: #e2e8f0; color: var(--text-primary);">{{ count($batches) }}</span>
+                <i class="fas fa-bolt"></i> <span id="section-heading-title">Active Batches</span> <span class="badge-count"
+                    id="section-heading-count" style="background: #e2e8f0; color: var(--text-primary);">{{ count($batches) }}</span>
                 <span class="section-heading-sub">Click any batch for student-level breakdown</span>
             </div>
 
             @forelse($batches as $index => $batch)
                 @php
-                    // Simulated data based on design
-                    $progressValues = [
-                        ['course' => 74, 'score' => 77, 'attendance' => 91, 'syllabus' => 74, 'overall' => 74, 'submissions' => 3],
-                        ['course' => 62, 'score' => 65, 'attendance' => 84, 'syllabus' => 62, 'overall' => 62, 'submissions' => 1],
-                        ['course' => 48, 'score' => 50, 'attendance' => 78, 'syllabus' => 48, 'overall' => 48, 'submissions' => 1],
+                    $stats = $batchStats[$batch->id] ?? [
+                        'course' => 0,
+                        'syllabus' => 0,
+                        'attendance' => 0,
+                        'score' => 0,
+                        'overall' => 0,
+                        'submissions' => 0,
+                        'total_students' => $batch->joined_student_count ?? 0,
                     ];
 
-                    $stats = $progressValues[$index % count($progressValues)];
-                    $startDate = $batch->start_date ? \Carbon\Carbon::parse($batch->start_date)->format('j M Y') : '15 Sept 2024';
-                    $endDate = $batch->start_date ? \Carbon\Carbon::parse($batch->start_date)->addYear()->format('j M Y') : '15 Sept 2025';
+                    $startDate = $batch->start_date ? \Carbon\Carbon::parse($batch->start_date)->format('j M Y') : 'N/A';
+                    $endDate = $batch->end_date ? \Carbon\Carbon::parse($batch->end_date)->format('j M Y') : ($batch->start_date ? \Carbon\Carbon::parse($batch->start_date)->addYear()->format('j M Y') : 'N/A');
                 @endphp
 
-                <div class="batch-card batch-item course-{{ $batch->course_id }}">
+                <div class="batch-card batch-item course-{{ $batch->course_id }}" data-course-id="course-{{ $batch->course_id }}">
                     <div class="batch-header">
                         <div class="batch-title-wrapper">
                             <div class="batch-title">
                                 <i class="fas fa-bolt"></i> {{ $batch->batch_code }}
                             </div>
                             <div class="batch-subtitle">
-                                {{ $batch->course->title ?? 'Full Stack' }} &middot;
-                                {{ strtolower($batch->batch_type) ?? 'morning' }} &middot;
-                                <i class="fas fa-user-circle"></i> {{ $batch->instructor->name ?? 'Vikram Patel' }} &middot;
-                                <i class="fas fa-users"></i> {{ $batch->joined_student_count ?? rand(15, 30) }} students
+                                {{ $batch->course->title ?? 'Live Course' }} &middot;
+                                {{ strtolower($batch->batch_type ?? 'Weekday') }} &middot;
+                                <i class="fas fa-user-circle"></i> {{ $batch->instructor->name ?? 'Unassigned' }} &middot;
+                                <i class="fas fa-users"></i> {{ $stats['total_students'] }} students
                             </div>
                         </div>
                         <div class="batch-overall">
@@ -77,7 +82,7 @@
 
                     <div class="progress-grid">
                         <!-- Course Progress -->
-                        <div class="progress-item color-blue">
+                        <div class="progress-item color-blue" title="{{ $stats['completed_modules'] ?? 0 }} of {{ $stats['total_modules'] ?? 0 }} modules completed">
                             <div class="progress-label">
                                 <i class="fas fa-book-open" style="color: var(--brand-blue)"></i> COURSE PROGRESS
                             </div>
@@ -87,8 +92,8 @@
                             </div>
                         </div>
 
-                        <!-- Avg Student Score -->
-                        <div class="progress-item color-purple">
+                        <!-- Avg Student Score (Assignments, Mini, Main Projects) -->
+                        <div class="progress-item color-purple" title="Average across Assignments, Mini Projects & Main Projects">
                             <div class="progress-label">
                                 <i class="fas fa-star" style="color: var(--accent-orange)"></i> AVG STUDENT SCORE
                             </div>
@@ -98,8 +103,8 @@
                             </div>
                         </div>
 
-                        <!-- Avg Attendance -->
-                        <div class="progress-item color-green">
+                        <!-- Avg Attendance (From Meeting Logs) -->
+                        <div class="progress-item color-green" title="Dynamic attendance marked from meeting logs">
                             <div class="progress-label">
                                 <i class="fas fa-calendar-check" style="color: var(--brand-blue)"></i> AVG ATTENDANCE
                             </div>
@@ -109,8 +114,8 @@
                             </div>
                         </div>
 
-                        <!-- Syllabus Done -->
-                        <div class="progress-item color-indigo">
+                        <!-- Syllabus Done (From Curriculum & Topic Logs) -->
+                        <div class="progress-item color-indigo" title="Curriculum syllabus coverage">
                             <div class="progress-label">
                                 <i class="fas fa-list-ul" style="color: var(--accent-green)"></i> SYLLABUS DONE
                             </div>
@@ -123,20 +128,23 @@
 
                     <div class="batch-footer">
                         <div class="footer-submissions">
-                            <i class="fas fa-inbox"></i> {{ $stats['submissions'] }} recent submissions
+                            <i class="fas fa-inbox"></i> {{ $stats['submissions'] }} submissions
                         </div>
 
                         <div class="footer-dates">
                             <i class="far fa-calendar-alt"></i> {{ $startDate }} &rarr; {{ $endDate }}
                         </div>
 
-                        <a href="#" class="btn-detail">
+                        <a href="{{ route('batches.show', $batch->id) }}" class="btn-detail">
                             <i class="far fa-eye"></i> View Detail
                         </a>
                     </div>
                 </div>
             @empty
-                <p class="text-muted text-center py-4">No batches found to display progress.</p>
+                <p class="text-muted text-center py-5">
+                    <i class="fas fa-layer-group d-block mb-3 h2 opacity-25"></i>
+                    No active batches found to display progress.
+                </p>
             @endforelse
         </div>
     </div>
@@ -144,13 +152,31 @@
 
 @push('script')
     <script>
-        // Just minimal tab filtering for the UI
         document.addEventListener('DOMContentLoaded', function () {
             const filterBtns = document.querySelectorAll('.filter-btn');
+            const batchItems = document.querySelectorAll('.batch-item');
+            const countBadge = document.getElementById('section-heading-count');
+
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     filterBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+
+                    const filter = btn.getAttribute('data-filter');
+                    let visibleCount = 0;
+
+                    batchItems.forEach(item => {
+                        if (filter === 'all' || item.classList.contains(filter)) {
+                            item.style.display = 'block';
+                            visibleCount++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    if (countBadge) {
+                        countBadge.textContent = visibleCount;
+                    }
                 });
             });
         });

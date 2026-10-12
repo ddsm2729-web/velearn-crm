@@ -42,11 +42,12 @@ class AssignmentController extends Controller implements HasMiddleware
         return view('assignments.index', compact('assignments', 'liveCourses', 'batches'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $courses = Course::where('course_type', 'live')->get();
         $batches = Batch::all();
-        return view('assignments.create', compact('courses', 'batches'));
+        $selectedCourseId = $request->query('course_id');
+        return view('assignments.create', compact('courses', 'batches', 'selectedCourseId'));
     }
 
     public function store(Request $request)

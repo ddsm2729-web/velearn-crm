@@ -42,11 +42,12 @@ class MiniProjectController extends Controller implements HasMiddleware
         return view('mini_projects.index', compact('mini_projects', 'liveCourses', 'batches'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $courses = Course::where('course_type', 'live')->get();
         $batches = Batch::all();
-        return view('mini_projects.create', compact('courses', 'batches'));
+        $selectedCourseId = $request->query('course_id');
+        return view('mini_projects.create', compact('courses', 'batches', 'selectedCourseId'));
     }
 
     public function store(Request $request)

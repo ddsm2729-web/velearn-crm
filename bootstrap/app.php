@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/razorpay/webhook',
             'verify-course-payment',
             'api/verify-course-payment',
+            'zoom/webhook',
+            'api/zoom/webhook',
         ]);
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

@@ -21,7 +21,9 @@
         "maatwebsite/excel": "^4.0",
         "razorpay/razorpay": "^2.9",
         "simplesoftwareio/simple-qrcode": "^4.2",
-        "spatie/laravel-permission": "^8.3"
+        "spatie/laravel-permission": "^8.3",
+        "symfony/brevo-mailer": "^8.1",
+        "symfony/http-client": "^8.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

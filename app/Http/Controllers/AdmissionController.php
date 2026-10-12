@@ -88,6 +88,7 @@ class AdmissionController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Admission details saved successfully.',
+            'admission_id' => $admission->id,
             'admission' => $admission
         ]);
     }

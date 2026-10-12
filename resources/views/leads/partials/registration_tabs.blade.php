@@ -42,6 +42,12 @@
 
                         <form id="admission-details-form" class="{{ $admission ? 'd-none' : '' }}">
                             <div class="row g-3">
+                                @php
+                                    $defaultCourseId = ($admission && $admission->course_id) ? $admission->course_id : ($lead->courses->count() == 1 ? $lead->courses->first()->id : null);
+                                    $defaultBatches = $defaultCourseId ? \App\Models\Batch::where('course_id', $defaultCourseId)->where(function($q) {
+                                        $q->where('batch_status', '!=', 'Completed')->orWhereNull('batch_status');
+                                    })->get() : collect();
+                                @endphp
                                 <div class="col-md-4">
                                     <label
                                         class="text-muted smaller text-uppercase fw-bold mb-2 d-block">Course</label>
@@ -51,7 +57,7 @@
                                         <option value="">Select Course</option>
                                         @foreach ($lead->courses as $course)
                                             <option value="{{ $course->id }}"
-                                                data-fees="{{ $course->buy_price ?? $course->offer_price ?? $course->mrp_price }}" {{ $admission && $admission->course_id == $course->id ? 'selected' : '' }}>
+                                                data-fees="{{ $course->buy_price ?? $course->offer_price ?? $course->mrp_price }}" {{ ($admission && $admission->course_id == $course->id) || (!$admission && $lead->courses->count() == 1) ? 'selected' : '' }}>
                                                 {{ $course->title }}
                                             </option>
                                         @endforeach
@@ -63,17 +69,17 @@
                                         Code</label>
                                     <select
                                         class="form-select bg-white border-secondary text-dark rounded-3 py-2 border-opacity-25 batch-selection"
-                                        name="batch_id" required {{ $admission ? '' : 'disabled' }}
+                                        name="batch_id" required {{ $defaultCourseId ? '' : 'disabled' }}
                                         data-selected="{{ $admission->batch_id ?? '' }}">
                                         <option value="">Select Batch</option>
-                                        @if ($admission && $admission->batch)
-                                            <option value="{{ $admission->batch_id }}" selected
-                                                data-code="{{ $admission->batch->batch_code }}"
-                                                data-type="{{ $admission->batch->batch_type }}">
-                                                {{ $admission->batch->batch_code }} -
-                                                {{ $admission->batch->batch_name }}
+                                        @foreach ($defaultBatches as $batch)
+                                            <option value="{{ $batch->id }}"
+                                                data-code="{{ $batch->batch_code }}"
+                                                data-type="{{ $batch->batch_type }}"
+                                                {{ ($admission && $admission->batch_id == $batch->id) ? 'selected' : '' }}>
+                                                {{ $batch->batch_code }} - {{ $batch->batch_name }}
                                             </option>
-                                        @endif
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-4">
