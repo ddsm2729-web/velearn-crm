@@ -83,40 +83,120 @@ class AppliedOpeningController extends Controller
     /**
      * Get details of a specific opening including its applicants.
      */
-    public function show($id): JsonResponse
+    public function show($id, Request $request)
     {
         $opening = CurrentOpening::with([
             'company',
-            'applications.user',
+            'applications.user.placementProfile',
             'applications.courseUser.course',
             'applications.courseUser.batch',
         ])->findOrFail($id);
 
-        return response()->json([
-            'status' => true,
-            'opening' => $opening,
-        ]);
+        if ($request->wantsJson() && !$request->has('view')) {
+            return response()->json([
+                'status' => true,
+                'opening' => $opening,
+            ]);
+        }
+
+        $applications = $opening->applications ?? collect();
+        $companyName = $opening->company->company_name ?? '';
+        $role = $opening->job_role ?? '';
+
+        // Match company and role interviews
+        $interviewQuery = ScheduleInterview::query();
+        if ($companyName) {
+            $interviewQuery->where('company', $companyName);
+        }
+        if ($role) {
+            $interviewQuery->where('role', $role);
+        }
+        $interviews = $interviewQuery->latest()->get();
+
+        $pendingApplicants = $applications->where('status', 'applied');
+        $sentHrApplicants = $applications->where('status', 'sent_hr');
+
+        $byTag = [
+            'scheduled' => $interviews->whereIn('status', ['scheduled', 're-scheduled']),
+            'attended' => $interviews->where('status', 'attended'),
+            'selected' => $interviews->where('status', 'selected'),
+            'rejected' => $interviews->where('status', 'rejected'),
+            'hold' => $interviews->whereIn('status', ['hold', 'on hold']),
+        ];
+
+        $tabCounts = [
+            'all' => $applications->count(),
+            'applied' => $pendingApplicants->count(),
+            'sent_hr' => $sentHrApplicants->count(),
+            'scheduled' => $byTag['scheduled']->count(),
+            'attended' => $byTag['attended']->count(),
+            'selected' => $byTag['selected']->count(),
+            'rejected' => $byTag['rejected']->count(),
+            'hold' => $byTag['hold']->count(),
+        ];
+
+        return view('applied-openings.show', compact(
+            'opening',
+            'applications',
+            'pendingApplicants',
+            'sentHrApplicants',
+            'interviews',
+            'byTag',
+            'tabCounts'
+        ));
     }
 
     /**
-     * Forward an applicant profile to HR.
+     * Forward an applicant profile to HR with dynamic email notification.
      */
     public function forwardToHr(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'application_id' => ['required', 'integer', 'exists:placement_applications,id'],
+            'hr_email' => ['required', 'email'],
+            'link_type' => ['nullable', 'string', 'in:combined,resume,portfolio,project'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $application = PlacementApplication::findOrFail($validated['application_id']);
+        $application = PlacementApplication::with([
+            'user.placementProfile',
+            'courseUser.course',
+            'courseUser.batch',
+            'opening.company'
+        ])->findOrFail($validated['application_id']);
+
+        $hrEmail = $validated['hr_email'];
+        $linkType = $validated['link_type'] ?? 'combined';
+        $subject = $validated['subject'] ?: ('Candidate Profile for ' . ($application->opening->job_role ?? 'Position'));
+        $remarks = $validated['remarks'] ?? '';
+
+        $emailDispatched = false;
+        try {
+            \Illuminate\Support\Facades\Mail::mailer('brevo')
+                ->to($hrEmail)
+                ->send(new \App\Mail\ForwardProfileToHrMail($application, $linkType, $subject, $remarks));
+
+            \Illuminate\Support\Facades\Log::info("Brevo Candidate Profile forwarded successfully to {$hrEmail} for app ID: {$application->id}");
+            $emailDispatched = true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Brevo forwardToHr Mail exception: " . $e->getMessage());
+        }
+
         $application->update([
             'status' => 'sent_hr',
             'is_new' => false,
             'sent_to_hr_at' => now(),
         ]);
 
+        $msg = $emailDispatched 
+            ? "Student profile forwarded to HR ({$hrEmail}) successfully."
+            : "Student marked as Sent to HR, but email delivery encountered an issue (check logs).";
+
         return response()->json([
             'status' => true,
-            'message' => 'Student profile successfully forwarded to HR.',
+            'message' => $msg,
+            'email_sent' => $emailDispatched,
         ]);
     }
 }

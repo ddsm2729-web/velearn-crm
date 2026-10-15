@@ -28,13 +28,31 @@
         
         $initials = strtoupper(substr($u->first_name ?? $u->name ?? 'A', 0, 1) . substr($u->last_name ?? '', 0, 1));
         if(strlen($initials) < 2) $initials = substr(strtoupper($u->name ?? 'AK'), 0, 2);
+
+        $overall = $courseUser->calc_overall ?? 0;
+        $overallStatus = strtolower($placementProfile->overall_status ?? '');
+        $courseUserStatus = strtolower($courseUser->status ?? '');
+
+        if ($overallStatus === 'approved' || $overallStatus === 'all_verified' || $overall >= 80) {
+            $studentBadgeText = 'PROFILE SENT';
+            $studentBadgeBg = '#10b981';
+        } elseif ($overallStatus === 'rejected' || $courseUserStatus === 'rejected') {
+            $studentBadgeText = 'REJECTED';
+            $studentBadgeBg = '#ef4444';
+        } elseif ($overall >= 60 && ($courseUserStatus === 'completed' || empty($overallStatus))) {
+            $studentBadgeText = 'NOT APPLIED';
+            $studentBadgeBg = '#64748b';
+        } else {
+            $studentBadgeText = 'IN PROGRESS';
+            $studentBadgeBg = '#f59e0b';
+        }
     @endphp
 
     <div class="container-fluid p-0 lead-profile-container mb-5">
         {{-- Header / Back Button --}}
         <div class="row mb-3">
             <div class="col-12">
-                <a href="{{ route('eligible-students.index') }}"
+                <a href="javascript:history.back()"
                     class="text-primary text-decoration-none d-inline-flex align-items-center back-btn">
                     <i class="fas fa-arrow-left me-2"></i>
                     Back to Eligible Students
@@ -53,7 +71,7 @@
                         <div>
                             <h2 class="mb-0 fw-bold">{{ $u->name ?? ($u->first_name . ' ' . $u->last_name) }}</h2>
                             <div class="d-flex align-items-center mt-1">
-                                <span class="badge text-uppercase px-2 py-1 me-2" style="background-color: #10b981;">PROFILE SENT</span>
+                                <span class="badge text-uppercase px-2 py-1 me-2" style="background-color: {{ $studentBadgeBg }};">{{ $studentBadgeText }}</span>
                                 <span class="text-muted small">#{{ str_pad($u->id ?? 0, 3, '0', STR_PAD_LEFT) }}</span>
                                 <span class="text-muted small ms-2">Course: <span class="text-primary fw-bold">{{ $c->title ?? 'N/A' }}</span></span>
                                 <span class="text-muted small ms-2">Batch: <span class="text-primary fw-bold">{{ $b->batch_code ?? 'N/A' }}</span></span>
@@ -632,6 +650,7 @@
                             <p class="text-muted small">Update this to 'Approved' once all documents are verified to push the student to the active job board feed.</p>
                             <select name="overall_status" class="form-select form-select-lg form-control" required>
                                 <option value="pending" {{ ($placementProfile->overall_status ?? 'pending') == 'pending' ? 'selected' : '' }}>Pending Final Review</option>
+                                <option value="in_progress" {{ ($placementProfile->overall_status ?? '') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
                                 <option value="approved" {{ ($placementProfile->overall_status ?? '') == 'approved' ? 'selected' : '' }}>Approved (Ready for Job Placements)</option>
                                 <option value="rejected" {{ ($placementProfile->overall_status ?? '') == 'rejected' ? 'selected' : '' }}>Rejected / Incomplete</option>
                             </select>

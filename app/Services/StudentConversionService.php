@@ -56,10 +56,11 @@ class StudentConversionService
                     'status' => 'active',
                 ]);
 
-                // Increment batch student count
+                // Sync batch student count
                 $batch = Batch::find($admission->batch_id);
                 if ($batch) {
-                    $batch->increment('joined_student_count');
+                    $batchCount = Admission::where('batch_id', $batch->id)->count();
+                    $batch->update(['joined_student_count' => $batchCount]);
                 }
             }
         }

@@ -413,6 +413,11 @@ class RoleSeeder extends Seeder
         if ($operationExecutive) {
             $operationExecutive->syncPermissions(Permission::all());
         }
+
+        $digitalMarketing = Role::where('name', 'Digital Marketing')->first();
+        if ($digitalMarketing) {
+            $digitalMarketing->syncPermissions(Permission::all());
+        }
     }
 }
 

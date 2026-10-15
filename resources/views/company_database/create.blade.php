@@ -5,7 +5,7 @@
     <div class="container-fluid p-0">
         <div class="align-items-center d-flex justify-content-between mb-4">
             <h1 class="h3 mb-0">Add <strong> Company </strong></h1>
-            <a href="{{ route('company-database.index') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back</a>
         </div>
 
         <div class="row">

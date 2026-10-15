@@ -450,7 +450,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <div>
                                     <div style="font-size:.83rem;font-weight:600;color:var(--sa-dark);">{{ $sp->first_name }} {{ $sp->last_name }}</div>
-                                    <div style="font-size:.7rem;color:var(--sa-muted);">{{ $sp->role->name ?? 'Staff' }}</div>
+                                    <div style="font-size:.7rem;color:var(--sa-muted);">{{ $sp->role->name ?? ($sp->user?->roles?->first()?->name ?? 'Staff') }}</div>
                                 </div>
                                 <span style="font-size:.82rem;font-weight:700;color:{{ $spc }};">{{ $sp->call_logs_count }} calls</span>
                             </div>
@@ -464,6 +464,9 @@
             </div>
         </div>
     </div>
+
+    {{-- ===== REVENUE TREND & LEAD FUNNEL ===== --}}
+    @include('dashboards.partials.revenue_funnel_cards')
 
     {{-- ===== QUICK ACTIONS ===== --}}
     <div class="action-strip mb-3">
@@ -480,7 +483,11 @@
     <div class="row g-3 mb-4">
         @forelse($activeStaffs as $index => $staff)
         @php
-            $sfColors = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#e83e8c','#fd7e14'];
+            $roleName = $staff->role->name ?? ($staff->user?->roles?->first()?->name ?? '');
+            if (strtolower(trim($roleName)) === 'superadmin') {
+                continue;
+            }
+            $sfColors = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#e83e8c','#fd7e14','#0ea5e9','#14b8a6','#84cc16','#6366f1'];
             $sfC = $sfColors[$index % count($sfColors)];
             $sfInit = strtoupper(substr($staff->first_name ?? '',0,1).substr($staff->last_name ?? '',0,1));
             if(empty($sfInit)) { $sfInit = 'ST'; }
@@ -493,7 +500,7 @@
                             <div class="staff-av" style="background:{{ $sfC }};width:44px;height:44px;border-radius:.75rem;font-size:.95rem;">{{ $sfInit }}</div>
                             <div>
                                 <div style="font-weight:700;color:var(--sa-dark);font-size:.9rem;">{{ $staff->first_name }} {{ $staff->last_name }}</div>
-                                <div style="font-size:.72rem;color:var(--sa-muted);">{{ $staff->role->name ?? 'Staff' }}</div>
+                                <div style="font-size:.72rem;color:var(--sa-muted);">{{ $staff->role->name ?? ($staff->user?->roles?->first()?->name ?? 'Staff') }}</div>
                             </div>
                         </div>
                         <span style="background:#d1fae5;color:#059669;font-size:.65rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block;margin-right:.3rem;"></span>Active</span>

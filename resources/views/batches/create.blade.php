@@ -9,8 +9,8 @@
 @section('content')
     <div class="container-fluid p-0">
         <div class="mb-4">
-            <a href="{{ route('batches.index') }}" class="btn btn-link text-muted p-0 mb-2">
-                <i class="fas fa-arrow-left me-1"></i> Back to Batches
+            <a href="javascript:history.back()" class="btn btn-link text-muted p-0 mb-2">
+                <i class="fas fa-arrow-left me-2"></i> Back to Batches
             </a>
             <h3 class="fw-bold">Create New Batch</h3>
         </div>

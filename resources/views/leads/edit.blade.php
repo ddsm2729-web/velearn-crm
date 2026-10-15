@@ -9,7 +9,7 @@
         <div class="align-items-center d-flex justify-content-between mb-4">
             <h1 class="h3 mb-0">Edit <strong>Lead</strong></h1>
             <a href="javascript:history.back()" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to Leads
+                <i class="fas fa-arrow-left me-2"></i> Back to Leads
             </a>
         </div>
 

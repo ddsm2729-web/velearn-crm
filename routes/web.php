@@ -46,23 +46,77 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->middleware('dashboard.role:SuperAdmin')->name('admin.dashboard');
     Route::get('/admin/staff-monitoring', [App\Http\Controllers\StaffMonitoringController::class, 'index'])->middleware('dashboard.role:SuperAdmin')->name('admin.staff-monitoring.index');
-    Route::get('/admin/impersonate/{id}', function ($id) {
+    Route::get('/admin/impersonate/{id}', function ($id, \Illuminate\Http\Request $request) {
         $impersonateUser = \App\Models\User::findOrFail($id);
-        return view('auth.login', ['impersonateUser' => $impersonateUser]);
-    })->middleware('dashboard.role:SuperAdmin')->name('admin.impersonate');
-    Route::post('/admin/impersonate/{id}', function ($id, \Illuminate\Http\Request $request) {
-        $impersonateUser = \App\Models\User::findOrFail($id);
-        $originalId = \Illuminate\Support\Facades\Auth::id();
+        $originalId = $request->session()->get('impersonated_by') ?? \Illuminate\Support\Facades\Auth::id();
         \Illuminate\Support\Facades\Auth::login($impersonateUser);
         $request->session()->put('impersonated_by', $originalId);
-        return redirect()->intended('/');
+        $request->session()->save();
+
+        $roleRoutes = [
+            'SuperAdmin'            => 'admin.dashboard',
+            'Tele Caller'           => 'tele-caller.dashboard',
+            'Admission Officer'     => 'admission-officer.dashboard',
+            'Support Executive'     => 'support.dashboard',
+            'Technical Staff'       => 'tech.dashboard',
+            'Technical Head'        => 'tech-head.dashboard',
+            'Dues collector'        => 'dues.dashboard',
+            'Digital Marketing'     => 'marketing.dashboard',
+            'Student Coordinator'   => 'student-coordinator.dashboard',
+            'Learning Coordinator'  => 'learning.dashboard',
+            'Operation Executive'   => 'operation.dashboard',
+            'Placement Coordinator' => 'placement-coordinator.dashboard',
+            'Student'               => 'student.dashboard',
+        ];
+
+        foreach ($roleRoutes as $role => $routeName) {
+            if ($impersonateUser->hasRole($role) && \Illuminate\Support\Facades\Route::has($routeName)) {
+                return redirect()->route($routeName);
+            }
+        }
+
+        return redirect()->to('/');
+    })->middleware('dashboard.role:SuperAdmin')->name('admin.impersonate');
+
+    Route::post('/admin/impersonate/{id}', function ($id, \Illuminate\Http\Request $request) {
+        $impersonateUser = \App\Models\User::findOrFail($id);
+        $originalId = $request->session()->get('impersonated_by') ?? \Illuminate\Support\Facades\Auth::id();
+        \Illuminate\Support\Facades\Auth::login($impersonateUser);
+        $request->session()->put('impersonated_by', $originalId);
+        $request->session()->save();
+
+        $roleRoutes = [
+            'SuperAdmin'            => 'admin.dashboard',
+            'Tele Caller'           => 'tele-caller.dashboard',
+            'Admission Officer'     => 'admission-officer.dashboard',
+            'Support Executive'     => 'support.dashboard',
+            'Technical Staff'       => 'tech.dashboard',
+            'Technical Head'        => 'tech-head.dashboard',
+            'Dues collector'        => 'dues.dashboard',
+            'Digital Marketing'     => 'marketing.dashboard',
+            'Student Coordinator'   => 'student-coordinator.dashboard',
+            'Learning Coordinator'  => 'learning.dashboard',
+            'Operation Executive'   => 'operation.dashboard',
+            'Placement Coordinator' => 'placement-coordinator.dashboard',
+            'Student'               => 'student.dashboard',
+        ];
+
+        foreach ($roleRoutes as $role => $routeName) {
+            if ($impersonateUser->hasRole($role) && \Illuminate\Support\Facades\Route::has($routeName)) {
+                return redirect()->route($routeName);
+            }
+        }
+
+        return redirect()->to('/');
     })->middleware('dashboard.role:SuperAdmin')->name('admin.impersonate.login');
+
     Route::get('/admin/impersonate-leave', function (\Illuminate\Http\Request $request) {
         if ($request->session()->has('impersonated_by')) {
             $originalUser = \App\Models\User::find($request->session()->get('impersonated_by'));
             if ($originalUser) {
                 \Illuminate\Support\Facades\Auth::login($originalUser);
                 $request->session()->forget('impersonated_by');
+                $request->session()->save();
             }
         }
         return redirect()->route('admin.dashboard');
@@ -80,11 +134,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/placement-coordinator/dashboard', [DashboardController::class, 'placementCoordinator'])->middleware('dashboard.role:Placement Coordinator')->name('placement-coordinator.dashboard');
     Route::get('/student/dashboard', [DashboardController::class, 'student'])->middleware('dashboard.role:Student')->name('student.dashboard');
     Route::get('/eligible-students', [App\Http\Controllers\EligibleStudentController::class, 'index'])->name('eligible-students.index');
+    Route::post('/eligible-students/push-opening', [App\Http\Controllers\EligibleStudentController::class, 'pushToLms'])->name('eligible-students.push-opening');
     Route::get('/eligible-students/batches', [App\Http\Controllers\EligibleStudentController::class, 'getBatches'])->name('eligible-students.batches');
     Route::get('/eligible-students/{student}', [App\Http\Controllers\EligibleStudentController::class, 'show'])->name('eligible-students.show');
     Route::post('/eligible-students/{student}/review', [App\Http\Controllers\EligibleStudentController::class, 'updateReview'])->name('eligible-students.review');
     Route::post('/schedule-interviews', [App\Http\Controllers\ScheduleInterviewController::class, 'store'])->name('schedule-interviews.store');
+    Route::get('/schedule-interviews/{scheduleInterview}', [App\Http\Controllers\ScheduleInterviewController::class, 'show'])->name('schedule-interviews.show');
     Route::post('/schedule-interviews/{scheduleInterview}/outcome', [App\Http\Controllers\ScheduleInterviewController::class, 'updateOutcome'])->name('schedule-interviews.outcome');
+    Route::post('/schedule-interviews/{scheduleInterview}/call-log', [App\Http\Controllers\ScheduleInterviewController::class, 'storeCallLog'])->name('schedule-interviews.call-log.store');
+
+    // Follow-ups / Lead Management (Student & Company Follow-ups)
+    Route::resource('student-followups', App\Http\Controllers\StudentFollowupController::class);
+    Route::get('/placement-followups', [App\Http\Controllers\StudentFollowupController::class, 'index'])->name('placement-followups.index');
 });
 
 Route::middleware('auth')->group(function () {
@@ -231,6 +292,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/staff-monitoring/{id}/schedule', [App\Http\Controllers\StaffMonitoringController::class, 'scheduleMeeting'])->name('staff-monitoring.schedule');
         Route::get('/students', [App\Http\Controllers\StudentsManagementController::class, 'index'])->name('students.index');
         Route::get('/students/{id}', [App\Http\Controllers\StudentsManagementController::class, 'show'])->name('students.show');
+        Route::get('/students/{id}/attendance-details', [App\Http\Controllers\StudentsManagementController::class, 'attendanceDetails'])->name('students.attendance-details');
         
         Route::get('/demo-sessions', [App\Http\Controllers\DemoSessionController::class, 'index'])->name('demo-sessions.index');
         Route::post('/demo-sessions/book', [App\Http\Controllers\SessionBookingController::class, 'store'])->name('demo-sessions.book');
@@ -253,6 +315,10 @@ Route::middleware('auth')->group(function () {
     
     // Meetings
     Route::get('/meetings', [App\Http\Controllers\MeetingController::class, 'index'])->name('meetings.index');
+    Route::post('/meetings/generate-zoom-link', [App\Http\Controllers\MeetingController::class, 'generateZoomLink'])->name('meetings.generate-zoom-link');
+    Route::post('/meetings/student-evaluation', [App\Http\Controllers\MeetingController::class, 'storeStudentMeeting'])->name('meetings.student-evaluation.store');
+    Route::post('/meetings/staff-meeting', [App\Http\Controllers\MeetingController::class, 'storeStaffMeeting'])->name('meetings.staff-meeting.store');
+    Route::post('/meetings/{id}/status', [App\Http\Controllers\MeetingController::class, 'updateStatus'])->name('meetings.status');
 
     // Doubt Query Leads (CRM)
     Route::get('/doubt-query-leads', [App\Http\Controllers\SupportController::class, 'doubtQueryLeads'])->name('doubt-query-leads.index');
@@ -290,7 +356,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/payments/{id}/send-link', [App\Http\Controllers\PaymentController::class, 'sendMail'])->name('payments.send-link');
     Route::post('/payments/create-order', [App\Http\Controllers\PaymentController::class, 'createOrder'])->name('payments.create-order');
     Route::post('/payments/verify', [App\Http\Controllers\PaymentController::class, 'verify'])->name('payments.verify');
-
+    Route::get('/payments/{id}/invoice', [App\Http\Controllers\PaymentController::class, 'downloadInvoice'])->name('payments.invoice');
 
     Route::get('/students', [App\Http\Controllers\StudentController::class, 'index'])->name('students.index');
     Route::get('/payments', [App\Http\Controllers\PaymentController::class, 'index'])->name('payments.index');

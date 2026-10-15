@@ -309,6 +309,7 @@ class PaymentController extends Controller
                 
                 // Convert lead to student and allocate batch on first payment success
                 if ($payment->admission) {
+                    $payment->admission->update(['status' => 'ongoing']);
                     \App\Services\StudentConversionService::convertLeadToStudent($payment->admission);
                 }
 
@@ -483,5 +484,30 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    public function downloadInvoice($id)
+    {
+        $payment = Payment::with([
+            'admission.lead',
+            'admission.contact',
+            'admission.course',
+            'admission.batch',
+            'admission.lead.assignee',
+            'admission.payments'
+        ])->findOrFail($id);
+
+        $invoiceNumber = 'INV-' . str_pad($payment->id, 5, '0', STR_PAD_LEFT);
+        $receiptNumber = 'RCP-' . str_pad($payment->id, 5, '0', STR_PAD_LEFT);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payments.invoice', compact('payment', 'invoiceNumber', 'receiptNumber'));
+        $pdf->setPaper('a4', 'portrait');
+
+        if (request()->has('stream')) {
+            return $pdf->stream("{$invoiceNumber}.pdf");
+        }
+
+        return $pdf->download("{$invoiceNumber}.pdf");
+    }
 }
+
 

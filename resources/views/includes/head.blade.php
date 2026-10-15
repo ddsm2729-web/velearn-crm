@@ -21,10 +21,11 @@
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/calls.css') }}" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/report.css') }}" rel="stylesheet">
 
-<link rel="stylesheet" type="text/css" href="{{ asset('assets/css/dashboards.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ asset('assets/css/dashboards.css') }}?v={{ time() }}">
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/custom-styles.css') }}">
 
 <!-- Font Awesome CDN -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
 @stack('css')
+@stack('styles')

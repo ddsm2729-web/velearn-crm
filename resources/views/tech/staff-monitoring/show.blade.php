@@ -3,8 +3,8 @@
 @section('content')
     <div class="container-fluid py-2">
         <div class="mb-3">
-            <a href="{{ route('tech.staff-monitoring.index') }}" class="text-decoration-none text-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to Staff Monitor
+            <a href="javascript:history.back()" class="text-decoration-none text-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Staff Monitor
             </a>
         </div>
 
@@ -15,15 +15,11 @@
             })->join('');
             $initials = substr($initials, 0, 2);
 
-            $courseName = 'N/A';
-            if ($batches->isNotEmpty()) {
-                $courseName = $batches->first()->course->title ?? 'N/A';
-            }
-
-            $batchesCount = $batches->count();
-            $studentsCount = $batches->sum('joined_student_count');
-            $demosCount = $pendingDemos->count();
-            $doubtsCount = $pendingDoubts->count();
+            $courseName = $metrics['primaryCourse'] ?? 'N/A';
+            $batchesCount = $metrics['batchesCount'] ?? $batches->count();
+            $studentsCount = $metrics['studentsCount'] ?? $batches->sum('joined_student_count');
+            $demosCount = $metrics['demosCount'] ?? $pendingDemos->count();
+            $doubtsCount = $metrics['doubtsCount'] ?? $pendingDoubts->count();
 
             $isActive = ($staff && $staff->status == 1);
             if ($staff && !is_numeric($staff->status)) {
@@ -151,11 +147,32 @@
                                             {{ $batch->start_date ? \Carbon\Carbon::parse($batch->start_date)->format('d M Y') : 'N/A' }}
                                         </p>
                                     </div>
-                                    <div class="text-end" style="width: 150px;">
+                                    <div class="text-end" style="width: 170px;">
                                         @php 
-                                            $totalDays = \Carbon\Carbon::parse($batch->start_date)->diffInDays(\Carbon\Carbon::parse($batch->end_date)) ?: 1;
-                                            $passedDays = \Carbon\Carbon::parse($batch->start_date)->diffInDays(now(), false);
-                                            $progress = max(0, min(100, round(($passedDays / $totalDays) * 100)));
+                                            $curricula = \App\Models\CourseCurriculum::where('course_id', $batch->course_id)->with('descriptions')->get();
+                                            $totalModules = $curricula->count();
+                                            $completedModules = 0;
+                                            foreach ($curricula as $curriculum) {
+                                                $expectedTopics = $curriculum->descriptions ? $curriculum->descriptions->count() : 0;
+                                                $loggedTopics = \App\Models\BatchTopicLog::where('batch_id', $batch->id)
+                                                    ->where('course_curriculum_id', $curriculum->id)
+                                                    ->count();
+                                                $hasExplicitComplete = \App\Models\BatchTopicLog::where('batch_id', $batch->id)
+                                                    ->where('course_curriculum_id', $curriculum->id)
+                                                    ->where(function ($q) {
+                                                        $q->where('is_completed', 1)->orWhere('status', 'Completed');
+                                                    })
+                                                    ->exists();
+
+                                                if ($hasExplicitComplete) {
+                                                    $completedModules++;
+                                                } elseif ($expectedTopics > 0 && $loggedTopics >= $expectedTopics) {
+                                                    $completedModules++;
+                                                } elseif ($expectedTopics == 0 && $loggedTopics > 0) {
+                                                    $completedModules++;
+                                                }
+                                            }
+                                            $progress = $totalModules > 0 ? min(100, round(($completedModules / $totalModules) * 100)) : 0;
                                         @endphp
                                         <div class="d-flex justify-content-between mb-1 small fw-bold">
                                             <span>Progress</span>
@@ -165,6 +182,7 @@
                                             <div class="progress-bar bg-primary" role="progressbar"
                                                 style="width: {{ $progress }}%;"></div>
                                         </div>
+                                        <div class="text-muted" style="font-size: 0.65rem; margin-top: 3px;">{{ $completedModules }}/{{ $totalModules }} Modules Completed</div>
                                     </div>
                                 </div>
                             @empty
@@ -272,28 +290,18 @@
                         </div>
                         <div class="card-body pb-4">
                             @php
-                                $sylCov = $batchesCount > 0 ? collect($batches)->map(function($b) {
-                                    $t = \Carbon\Carbon::parse($b->start_date)->diffInDays(\Carbon\Carbon::parse($b->end_date)) ?: 1;
-                                    $p = \Carbon\Carbon::parse($b->start_date)->diffInDays(now(), false);
-                                    return max(0, min(100, round(($p / $t) * 100)));
-                                })->avg() : 0;
-                                $sylCov = round($sylCov);
-                                
-                                // Dynamic placeholder logic if real scores are missing
-                                $studentIds = \App\Models\Admission::whereIn('batch_id', $batches->pluck('id'))->pluck('contact_id')->filter()->toArray();
-                                $avgScore = 0;
-                                if (!empty($studentIds)) {
-                                    $avgScore = round(\App\Models\MiniProjectSubmission::whereIn('user_id', $studentIds)->avg('score') ?? 0);
-                                }
-                                
-                                $avgAtt = 0; // Real attendance requires attendance table
+                                $sylCov = $metrics['syllabusDone'] ?? 0;
+                                $completedMods = $metrics['completedModules'] ?? 0;
+                                $totMods = $metrics['totalModules'] ?? 0;
+                                $avgScore = $metrics['avgScore'] ?? 0;
+                                $avgAtt = $metrics['avgAttendance'] ?? 0;
                             @endphp
 
                             <!-- Metric 1 -->
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <span class="fw-medium text-dark"><i class="fas fa-book-open text-primary me-2"></i>
-                                        Syllabus Coverage</span>
+                                        Syllabus Coverage @if($totMods > 0)<small class="text-muted fw-normal ms-1">({{ $completedMods }}/{{ $totMods }} modules completed)</small>@endif</span>
                                     <span class="fw-bold">{{ $sylCov }}%</span>
                                 </div>
                                 <div class="progress" style="height: 8px;">
@@ -359,23 +367,111 @@
 @push('script')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    function setModalMeetingType(type) {
+        document.getElementById('meetingTypeInput').value = type;
+        const isStaff = (type === 'Staff Meeting');
+        
+        const btnStaff = document.getElementById('btnStaffMeeting');
+        const btnGroup = document.getElementById('btnGroupMeeting');
+        
+        if (btnStaff && btnGroup) {
+            btnStaff.style.background = isStaff ? '#eff6ff' : '#f8fafc';
+            btnStaff.style.color = isStaff ? '#2563eb' : '#64748b';
+            btnStaff.style.border = isStaff ? '1px solid #3b82f6' : '1px solid #cbd5e1';
+            
+            btnGroup.style.background = !isStaff ? '#eff6ff' : '#f8fafc';
+            btnGroup.style.color = !isStaff ? '#2563eb' : '#64748b';
+            btnGroup.style.border = !isStaff ? '1px solid #3b82f6' : '1px solid #cbd5e1';
+        }
+
+        const staffCont = document.getElementById('staffSelectContainer');
+        const groupCont = document.getElementById('groupSelectContainer');
+        if (staffCont) staffCont.style.display = isStaff ? 'block' : 'none';
+        if (groupCont) groupCont.style.display = !isStaff ? 'block' : 'none';
+
+        const titleInput = document.getElementById('meetingTitle');
+        if (titleInput) {
+            if (isStaff) {
+                titleInput.placeholder = 'e.g. 1:1 — Performance Review, Curriculum Sync';
+                if (!titleInput.value || titleInput.value.includes('Technical Staff Group Sync')) {
+                    titleInput.value = '1:1 Staff Meeting with ' + '{{ addslashes($name) }}';
+                }
+            } else {
+                titleInput.placeholder = 'e.g. Weekly Curriculum Sync, Tech Stack Discussion';
+                if (!titleInput.value || titleInput.value.includes('1:1 Staff Meeting with')) {
+                    titleInput.value = 'Technical Staff Group Sync & Review';
+                }
+            }
+        }
+    }
+
+    function generateZoomLinkForModal() {
+        const titleInput = document.getElementById('meetingTitle');
+        const dateInput = document.getElementById('meetingDate');
+        const timeInput = document.getElementById('meetingTime');
+        const linkInput = document.getElementById('meetingLink');
+        const btnText = document.getElementById('btnGenZoomText');
+        const statusBadge = document.getElementById('zoomLinkStatusBadge');
+
+        const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : 'Staff Meeting';
+        const date = (dateInput && dateInput.value) ? dateInput.value : '{{ date("Y-m-d") }}';
+        const time = (timeInput && timeInput.value) ? timeInput.value : '10:00';
+
+        btnText.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+
+        fetch("{{ route('meetings.generate-zoom-link') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                title: title,
+                date: date,
+                time: time
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btnText.innerHTML = '<i class="fas fa-magic me-1"></i> Auto-Generate Zoom Link';
+            if (data.link) {
+                linkInput.value = data.link;
+                if (data.zoom_meeting_id) {
+                    document.getElementById('zoomMeetingId').value = data.zoom_meeting_id;
+                    document.getElementById('zoomPassword').value = data.zoom_password || '';
+                    document.getElementById('zoomStartUrl').value = data.start_url || '';
+                }
+                statusBadge.style.display = 'block';
+                statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> ' + (data.message || 'Zoom meeting link generated!');
+            }
+        })
+        .catch(err => {
+            btnText.innerHTML = '<i class="fas fa-magic me-1"></i> Auto-Generate Zoom Link';
+            console.error('Zoom link gen error:', err);
+            const fallback = 'https://meet.jit.si/velearn-staff-' + Math.random().toString(36).substring(2, 9);
+            linkInput.value = fallback;
+            statusBadge.style.display = 'block';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Live meeting room generated!';
+        });
+    }
+
     function openScheduleMeetingModal() {
         Swal.fire({
-            title: '<div style="text-align: left; font-weight: bold; font-family: \'Outfit\', sans-serif; color: #1e293b;">Schedule Staff Meeting<div style="font-size: 0.8rem; color: #64748b; font-weight: normal; margin-top: 5px;">Connect with staff or group</div></div>',
+            title: '<div style="text-align: left; font-weight: bold; font-family: \'Outfit\', sans-serif; color: #1e293b;">Schedule Staff Meeting<div style="font-size: 0.8rem; color: #64748b; font-weight: normal; margin-top: 5px;">Connect with staff via 1:1 or group meeting</div></div>',
             html: `
                 <div style="text-align: left; font-family: 'Inter', sans-serif;">
                     <div class="mb-3">
                         <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Meeting Type</label>
                         <div class="d-flex gap-2">
                             <input type="hidden" id="meetingTypeInput" value="Staff Meeting">
-                            <button type="button" id="btnStaffMeeting" onclick="document.getElementById('meetingTypeInput').value='Staff Meeting'; this.style.background='#eff6ff'; this.style.color='#2563eb'; this.style.border='1px solid #3b82f6'; document.getElementById('btnGroupMeeting').style.background='#f8fafc'; document.getElementById('btnGroupMeeting').style.color='#64748b'; document.getElementById('btnGroupMeeting').style.border='1px solid #e2e8f0'; document.getElementById('staffSelectContainer').style.display='block'; document.getElementById('groupSelectContainer').style.display='none';" class="btn flex-fill text-start" style="background: #eff6ff; border: 1px solid #3b82f6; color: #2563eb; font-weight: 600; border-radius: 6px;"><i class="fas fa-user-friends me-2"></i> Staff Meeting</button>
-                            <button type="button" id="btnGroupMeeting" onclick="document.getElementById('meetingTypeInput').value='Group Meeting'; this.style.background='#eff6ff'; this.style.color='#2563eb'; this.style.border='1px solid #3b82f6'; document.getElementById('btnStaffMeeting').style.background='#f8fafc'; document.getElementById('btnStaffMeeting').style.color='#64748b'; document.getElementById('btnStaffMeeting').style.border='1px solid #e2e8f0'; document.getElementById('staffSelectContainer').style.display='none'; document.getElementById('groupSelectContainer').style.display='block';" class="btn flex-fill text-start" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; font-weight: 600; border-radius: 6px;"><i class="fas fa-users me-2"></i> Group Meeting</button>
+                            <button type="button" id="btnStaffMeeting" onclick="setModalMeetingType('Staff Meeting')" class="btn flex-fill text-start" style="background: #eff6ff; border: 1px solid #3b82f6; color: #2563eb; font-weight: 600; border-radius: 6px;"><i class="fas fa-user-friends me-2"></i> 1:1 Staff Meeting</button>
+                            <button type="button" id="btnGroupMeeting" onclick="setModalMeetingType('Group Meeting')" class="btn flex-fill text-start" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #64748b; font-weight: 600; border-radius: 6px;"><i class="fas fa-users me-2"></i> Group Meeting</button>
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Heading / Title <span class="text-danger">*</span></label>
-                        <input type="text" id="meetingTitle" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" placeholder="e.g. Weekly Curriculum Sync &middot; Mid-Course Review">
+                        <input type="text" id="meetingTitle" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" value="1:1 Staff Meeting with {{ addslashes($name) }}" placeholder="e.g. 1:1 — Performance Review, Curriculum Sync">
                     </div>
                     
                     <div class="row mb-3">
@@ -385,37 +481,54 @@
                         </div>
                         <div class="col-6">
                             <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Time <span class="text-danger">*</span></label>
-                            <input type="time" id="meetingTime" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" value="10:00">
+                            <input type="time" id="meetingTime" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" value="{{ date('H:i') }}">
                         </div>
                     </div>
 
                     <div class="mb-3" id="staffSelectContainer">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Staff Member</label>
-                        <select id="meetingStaff" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" disabled>
-                            <option value="{{ $user->id }}" selected>{{ addslashes($name) }} ({{ addslashes($courseName) }})</option>
-                        </select>
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">1:1 Staff Member</label>
+                        <div class="p-2 px-3 bg-light rounded border d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2 fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem;">{{ $initials }}</div>
+                            <span class="fw-semibold text-dark">{{ $name }}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ $courseName }}</span>
+                        </div>
                     </div>
 
                     <div class="mb-3" id="groupSelectContainer" style="display: none;">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Select Batch / Group</label>
-                        <select id="meetingGroup" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;">
+                        <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Select Batch / Group Target</label>
+                        <select id="meetingGroup" class="form-control mb-2" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;">
+                            <option value="">All Technical Staff Members</option>
                             @foreach($batches as $batch)
                                 <option value="{{ $batch->id }}">{{ addslashes($batch->batch_code ?? 'Batch #'.$batch->id) }} &bull; {{ addslashes($batch->course->title ?? '') }}</option>
                             @endforeach
-                            @if($batches->count() == 0)
-                                <option value="" disabled selected>No active batches assigned</option>
-                            @endif
                         </select>
+                        <div class="p-2 px-3 bg-light rounded border text-muted small">
+                            <i class="fas fa-info-circle text-primary me-1"></i> Invites <strong>All Technical Staff</strong> automatically to this sync.
+                        </div>
                     </div>
                     
                     <div class="mb-3">
                         <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Agenda / Notes</label>
-                        <textarea id="meetingAgenda" class="form-control" rows="3" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" placeholder="What will be discussed? Preparation required?"></textarea>
+                        <textarea id="meetingAgenda" class="form-control" rows="2" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" placeholder="What will be discussed? Preparation required?"></textarea>
                     </div>
                     
                     <div class="mb-1">
-                        <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Meeting Link (Optional)</label>
-                        <input type="text" id="meetingLink" class="form-control" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px;" placeholder="Auto-generates if blank">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0;">Meeting Link</label>
+                            <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-bold" style="font-size: 0.75rem;" onclick="generateZoomLinkForModal()">
+                                <i class="fas fa-magic me-1"></i> <span id="btnGenZoomText">Auto-Generate Zoom Link</span>
+                            </button>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-primary"><i class="fas fa-video"></i></span>
+                            <input type="url" id="meetingLink" class="form-control border-start-0" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 10px;" placeholder="Auto-generates Zoom link if left blank">
+                        </div>
+                        <div id="zoomLinkStatusBadge" style="display: none; margin-top: 6px;" class="small text-success fw-bold">
+                            <i class="fas fa-check-circle me-1"></i> Zoom meeting link generated successfully!
+                        </div>
+                        <input type="hidden" id="zoomMeetingId">
+                        <input type="hidden" id="zoomPassword">
+                        <input type="hidden" id="zoomStartUrl">
                     </div>
                 </div>
             `,
@@ -450,6 +563,10 @@
                 const meetingType = document.getElementById('meetingTypeInput').value;
                 const agenda = document.getElementById('meetingAgenda').value;
                 const meetLink = document.getElementById('meetingLink').value;
+                const zoomMeetingId = document.getElementById('zoomMeetingId')?.value;
+                const zoomPassword = document.getElementById('zoomPassword')?.value;
+                const zoomStartUrl = document.getElementById('zoomStartUrl')?.value;
+                const groupId = document.getElementById('meetingGroup')?.value;
                 
                 if (!title || !date || !time) {
                     Swal.showValidationMessage('Please fill in all required fields');
@@ -468,7 +585,11 @@
                         date: date,
                         time: time,
                         agenda: agenda,
-                        meet_link: meetLink
+                        meet_link: meetLink,
+                        zoom_meeting_id: zoomMeetingId,
+                        zoom_password: zoomPassword,
+                        zoom_start_url: zoomStartUrl,
+                        batch_id: groupId
                     })
                 }).then(response => {
                     if (!response.ok) {
@@ -480,16 +601,42 @@
                 });
             }
         }).then((result) => {
-            if (result.isConfirmed) {
+            if (result.isConfirmed && result.value) {
+                const res = result.value;
+                const link = res.meet_link || '';
+                const startUrl = res.start_url || link;
+                const mt = res.meeting || {};
+                
                 Swal.fire({
                     icon: 'success',
-                    title: 'Scheduled!',
-                    text: 'The meeting has been successfully scheduled.',
+                    title: `<div style="font-size: 1.3rem; font-weight: bold; color: #1e293b;">${mt.meeting_type || 'Meeting'} Scheduled!</div>`,
+                    html: `
+                        <div style="text-align: left; font-size: 0.9rem; color: #475569; margin-top: 10px;">
+                            <p class="mb-2"><strong>Title:</strong> ${mt.title || ''}</p>
+                            <p class="mb-2"><strong>Date & Time:</strong> ${mt.date || ''} at ${mt.time || ''}</p>
+                            ${res.zoom_meeting_id ? `<p class="mb-2"><strong>Zoom Meeting ID:</strong> ${res.zoom_meeting_id}</p>` : ''}
+                            ${res.zoom_password ? `<p class="mb-2"><strong>Passcode:</strong> ${res.zoom_password}</p>` : ''}
+                            <div class="p-3 bg-light rounded-3 border mt-3">
+                                <div class="fw-bold small text-muted text-uppercase mb-1">Meeting Link</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="text" readonly value="${link}" class="form-control form-control-sm bg-white" id="successMeetLinkInput">
+                                    <button type="button" class="btn btn-sm btn-primary text-nowrap" onclick="navigator.clipboard.writeText('${link}'); this.innerText='Copied!';"><i class="fas fa-copy me-1"></i> Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    `,
                     background: '#ffffff',
                     color: '#1e293b',
+                    confirmButtonText: '<i class="fas fa-video me-1"></i> Start / Join Meeting',
+                    showCancelButton: true,
+                    cancelButtonText: 'Done',
                     confirmButtonColor: '#3b82f6',
                     customClass: {
                         popup: 'swal-custom-popup'
+                    }
+                }).then((action) => {
+                    if (action.isConfirmed && (startUrl || link)) {
+                        window.open(startUrl || link, '_blank');
                     }
                 });
             }

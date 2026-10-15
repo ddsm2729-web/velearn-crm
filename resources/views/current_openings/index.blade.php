@@ -181,18 +181,35 @@
             // Send Mail Action
             $(document).on('click', '.send-mail-btn', function() {
                 let url = $(this).data('href');
+                let defaultEmail = $(this).data('email') || '';
+                let role = $(this).data('role') || 'Position';
+                let company = $(this).data('company') || '';
+
                 Swal.fire({
-                    title: 'Send Email?',
-                    text: 'Send this opening details to snegaammu123@gmail.com?',
-                    icon: 'question',
+                    title: 'Send Opening via Email',
+                    html: `<div class="text-muted small mb-2">Send opening details for <strong class="text-dark">${role}</strong> ${company ? `(${company})` : ''} to:</div>`,
+                    input: 'email',
+                    inputValue: defaultEmail,
+                    inputPlaceholder: 'Enter recipient email address',
+                    icon: 'info',
                     showCancelButton: true,
-                    confirmButtonText: 'Yes, Send',
+                    confirmButtonText: '<i class="fas fa-paper-plane me-1"></i> Send Email',
+                    confirmButtonColor: '#24b8ec',
+                    cancelButtonText: 'Cancel',
                     showLoaderOnConfirm: true,
-                    preConfirm: () => {
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'Please enter a valid recipient email address!';
+                        }
+                    },
+                    preConfirm: (email) => {
                         return $.ajax({
                             url: url,
                             type: 'POST',
-                            data: { _token: '{{ csrf_token() }}' },
+                            data: { 
+                                _token: '{{ csrf_token() }}',
+                                email: email 
+                            },
                         }).catch(error => {
                             Swal.showValidationMessage(`Request failed: ${error.responseJSON?.message || error.statusText}`);
                         });
@@ -200,10 +217,10 @@
                     allowOutsideClick: () => !Swal.isLoading()
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        if (result.value.status) {
+                        if (result.value && result.value.status) {
                             toastr.success(result.value.message);
-                        } else {
-                            toastr.error(result.value.message);
+                        } else if (result.value) {
+                            toastr.error(result.value.message || 'Failed to send email.');
                         }
                     }
                 });

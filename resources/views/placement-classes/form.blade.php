@@ -89,7 +89,7 @@
             <h2><i class="fas {{ $isEdit ? 'fa-pen-to-square' : 'fa-circle-plus' }} me-2"></i>{{ $isEdit ? 'Edit Placement Class' : 'Create Placement Class' }}</h2>
             <p>{{ $isEdit ? 'Update the class details or replace its video.' : 'Add a new day-wise placement training video for students.' }}</p>
         </div>
-        <a href="{{ route('placement-classes.index') }}" class="btn btn-back"><i class="fas fa-arrow-left me-1"></i> Back to list</a>
+        <a href="javascript:history.back()" class="btn btn-back"><i class="fas fa-arrow-left me-2"></i> Back to list</a>
     </div>
 
     <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data" id="placementClassForm" novalidate>

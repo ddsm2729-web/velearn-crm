@@ -480,7 +480,7 @@
                 </thead>
                 <tbody>
                     @forelse($openings as $index => $opening)
-                        <tr onclick="window.location='{{ route('current-openings.show', $opening->id) }}'" style="cursor:pointer;">
+                        <tr onclick="window.location='{{ route('applied-openings.show', $opening->id) }}'" style="cursor:pointer;">
                             <td style="color:var(--ao-text-muted);font-size:0.8rem;">{{ $openings->firstItem() + $index }}</td>
                             <td>
                                 <div class="d-flex align-items-center gap-3">

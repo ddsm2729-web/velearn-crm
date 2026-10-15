@@ -107,13 +107,42 @@
                                 @forelse($recentLeads as $lead)
                                     <tr>
                                         <td>
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="avatar-sm" style="background: #e0f2fe; color: #0369a1;">
+                                            <div class="d-flex align-items-start gap-3">
+                                                <div class="avatar-sm mt-1" style="background: #e0f2fe; color: #0369a1; flex-shrink: 0;">
                                                     {{ strtoupper(substr($lead->name, 0, 1)) }}
                                                 </div>
                                                 <div>
-                                                    <div class="fw-bold text-dark small">{{ $lead->name }}</div>
-                                                    <div class="text-muted smaller">{{ $lead->courses->pluck('title')->join(', ') ?: 'No Course' }}</div>
+                                                    <div class="fw-bold text-dark small mb-1">{{ $lead->name }}</div>
+                                                    @if($lead->courses && $lead->courses->isNotEmpty())
+                                                        <ul class="mb-0 ps-3 text-muted" style="font-size: 0.78rem; list-style-type: disc;">
+                                                            @foreach($lead->courses as $course)
+                                                                @php
+                                                                    $rawPrice = floatval(preg_replace('/[^0-9.]/', '', (string)($course->buy_price ?? $course->offer_price ?? $course->mrp_price ?? 0)));
+                                                                    $rawType = strtolower(trim((string)$course->course_type));
+                                                                    $isFree = ($rawType === 'free') || ($rawPrice <= 0 && !in_array($rawType, ['paid', 'live', 'combo']));
+                                                                @endphp
+                                                                <li class="mb-1" style="line-height: 1.4;">
+                                                                    <span class="text-dark fw-medium">{{ $course->title }}</span>
+                                                                    @if($isFree)
+                                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0 ms-1" style="font-size: 0.68rem; font-weight: 600;">
+                                                                            Free
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0 ms-1" style="font-size: 0.68rem; font-weight: 600;">
+                                                                            Paid{{ $rawPrice > 0 ? ' (₹' . number_format($rawPrice) . ')' : '' }}
+                                                                        </span>
+                                                                    @endif
+                                                                    @if($rawType && !in_array($rawType, ['free', 'paid']))
+                                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0 ms-1 text-capitalize" style="font-size: 0.68rem;">
+                                                                            {{ $course->course_type }}
+                                                                        </span>
+                                                                    @endif
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @else
+                                                        <div class="text-muted smaller">No Course</div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>

@@ -38,4 +38,8 @@ class CourseUser extends Model
         return $this->belongsTo(Batch::class, 'batch_id');
     }
 
+    public function placementProfile()
+    {
+        return $this->hasOne(PlacementProfile::class, 'user_id', 'auth_id');
+    }
 }

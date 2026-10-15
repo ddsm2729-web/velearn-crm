@@ -14,6 +14,7 @@ class BatchSystemController extends Controller
                 $q->where('course_type', 'live');
             })
             ->with(['course', 'instructor'])
+            ->withCount('admissions')
             ->orderBy('start_date', 'asc');
 
         if ($request->ajax()) {

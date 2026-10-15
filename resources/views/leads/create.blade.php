@@ -8,8 +8,8 @@
     <div class="container-fluid p-0">
         <div class="align-items-center d-flex justify-content-between mb-4">
             <h1 class="h3 mb-0">Create <strong>New Lead</strong></h1>
-            <a href="{{ route('leads.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to Leads
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Leads
             </a>
         </div>
 

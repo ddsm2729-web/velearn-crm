@@ -6,7 +6,7 @@
             <h3><strong>Edit Placement Class Question</strong></h3>
         </div>
         <div class='col-auto ms-auto text-end mt-n1'>
-            <a href='{{ route('placement-class-questions.index') }}' class='btn btn-secondary shadow-sm'>Back</a>
+            <a href="javascript:history.back()" class='btn btn-secondary shadow-sm'><i class="fas fa-arrow-left me-2"></i> Back</a>
         </div>
     </div>
     <div class='card'>

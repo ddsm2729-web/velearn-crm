@@ -28,9 +28,17 @@ class BatchController extends Controller implements HasMiddleware
         $today = now()->toDateString();
         
         $batches = Batch::with(['course', 'instructor'])
+            ->withCount('admissions')
             ->orderBy('start_date', 'asc')
-            ->get()
-            ->groupBy('course_id');
+            ->get();
+
+        foreach ($batches as $b) {
+            if ((int)$b->getRawOriginal('joined_student_count') !== (int)$b->admissions_count) {
+                Batch::where('id', $b->id)->update(['joined_student_count' => $b->admissions_count]);
+            }
+        }
+
+        $batches = $batches->groupBy('course_id');
 
         return view('batches.index', compact('courses', 'batches', 'today'));
     }
@@ -44,8 +52,15 @@ class BatchController extends Controller implements HasMiddleware
                 $q->where('course_type', 'live');
             })
             ->with(['course', 'instructor'])
+            ->withCount('admissions')
             ->orderBy('start_date', 'asc')
             ->get();
+
+        foreach ($batches as $b) {
+            if ((int)$b->getRawOriginal('joined_student_count') !== (int)$b->admissions_count) {
+                Batch::where('id', $b->id)->update(['joined_student_count' => $b->admissions_count]);
+            }
+        }
 
         return view('batches.allocation', compact('courses', 'batches', 'today'));
     }
@@ -327,14 +342,13 @@ class BatchController extends Controller implements HasMiddleware
             ]
         );
 
-        if ($oldBatchId != $batch->id) {
-            // Increment the new batch
-            $batch->increment('joined_student_count');
-            
-            // Decrement the old batch if there was one
-            if ($oldBatchId) {
-                Batch::where('id', $oldBatchId)->where('joined_student_count', '>', 0)->decrement('joined_student_count');
-            }
+        // Sync accurate student counts
+        $newCount = \App\Models\Admission::where('batch_id', $batch->id)->count();
+        $batch->update(['joined_student_count' => $newCount]);
+
+        if ($oldBatchId && $oldBatchId != $batch->id) {
+            $oldCount = \App\Models\Admission::where('batch_id', $oldBatchId)->count();
+            Batch::where('id', $oldBatchId)->update(['joined_student_count' => $oldCount]);
         }
 
         // Sync to the frontend CourseUser record so the Profile page displays it

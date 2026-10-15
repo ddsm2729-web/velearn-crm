@@ -292,7 +292,7 @@
                                 </span>
                             </td>
                             <td class="text-end" style="white-space: nowrap;">
-                                <a href="#" class="btn-premium btn-success-soft">
+                                <a href="{{ route('payments.invoice', $payment->id) }}" class="btn-premium btn-success-soft" target="_blank" title="Download Invoice">
                                     <i class="fas fa-file-invoice"></i> Receipt
                                 </a>
                                 {{-- <a href="{{ route('batch-allocation.index') }}" class="btn-premium btn-blue-soft">

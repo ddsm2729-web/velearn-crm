@@ -7,8 +7,8 @@
     <div class="row mb-4">
         <div class="col-12 d-flex justify-content-between align-items-center">
             <h1 class="h3 mb-0 text-gray-800">Edit Topic Log</h1>
-            <a href="{{ route('tech.batch-logs.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Logs
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Logs
             </a>
         </div>
     </div>

@@ -33,6 +33,9 @@
             <button type="button" 
                 class="btn btn-sm btn-light-info shadow-none send-mail-btn" 
                 data-href="{{ route('current-openings.send-mail', encrypt($o->id)) }}"
+                data-email="{{ $o->hr_email_id ?? $o->company_mail_id ?? ($o->company->hr_email ?? '') }}"
+                data-role="{{ $o->job_role }}"
+                data-company="{{ $o->company->company_name ?? '' }}"
                 title="Send Mail">
                 <i class="fas fa-envelope"></i>
             </button>

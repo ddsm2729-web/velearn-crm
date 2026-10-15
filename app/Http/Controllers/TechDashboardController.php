@@ -106,13 +106,227 @@ class TechDashboardController extends Controller
             ];
         }
 
-        $todayActivities = [
-            ['name' => 'Priya Sharma', 'action' => 'Submitted Assignment: React To-Do App', 'initials' => 'P', 'color' => '#6366f1', 'batch' => 'FS-2024-A', 'batch_type' => 'Weekday'],
-            ['name' => 'Rahul Verma', 'action' => 'Attended Live Class: Module 9 - Redux', 'initials' => 'R', 'color' => '#4f46e5', 'batch' => 'FS-2024-A', 'batch_type' => 'Weekday'],
-            ['name' => 'Anjali Singh', 'action' => 'Submitted Mini Project: Portfolio Website', 'initials' => 'A', 'color' => '#4338ca', 'batch' => 'FS-2024-B', 'batch_type' => 'Weekend'],
-            ['name' => 'Arun Kumar', 'action' => 'Attended Live Class: Module 15 - Deployment', 'initials' => 'A', 'color' => '#4338ca', 'batch' => 'FS-2024-C', 'batch_type' => 'Fast Track'],
+        // Helper closures for initials and colors
+        $getColor = function($str) {
+            $palette = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#06b6d4', '#14b8a6'];
+            return $palette[abs(crc32($str ?? 'VE')) % count($palette)];
+        };
+
+        $getInitials = function($name) {
+            $name = trim($name ?: 'Student');
+            $parts = preg_split('/\s+/', $name);
+            return strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+        };
+
+        $todayActivities = collect();
+
+        // 1. Assignment Submissions
+        $assignmentSubs = \App\Models\AssignmentSubmission::with(['assignment.course', 'assignment.batch', 'student'])
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            })
+            ->latest('created_at')
+            ->take(15)
+            ->get();
+
+        foreach ($assignmentSubs as $sub) {
+            $studentName = $sub->student->name ?? 'Student';
+            $batchCode = $sub->assignment->batch->batch_code ?? 'Batch';
+            $batchType = $sub->assignment->batch->batch_type ?? 'Weekday';
+            if ($sub->assignment && $sub->assignment->batch && $sub->assignment->batch->batch_track) {
+                $batchType .= ' (' . $sub->assignment->batch->batch_track . ')';
+            }
+            $todayActivities->push([
+                'id' => 'assignment_' . $sub->id,
+                'type' => 'assignment',
+                'type_label' => 'Assignment',
+                'type_icon' => 'fas fa-file-alt',
+                'type_color' => '#6366f1',
+                'name' => $studentName,
+                'initials' => $getInitials($studentName),
+                'color' => $getColor($studentName),
+                'action' => 'Submitted Assignment: ' . ($sub->assignment->title ?? 'Assignment Task'),
+                'course' => $sub->assignment->course->title ?? '',
+                'batch' => $batchCode,
+                'batch_type' => $batchType,
+                'time' => $sub->created_at ? $sub->created_at->format('h:i A') : '',
+                'date' => $sub->created_at ? $sub->created_at->format('d M') : '',
+                'timestamp' => $sub->created_at ? $sub->created_at->timestamp : 0,
+                'link' => route('assignments.evaluate', $sub->id),
+                'link_text' => 'Evaluate'
+            ]);
+        }
+
+        // 2. Mini Project Submissions
+        $miniSubs = \App\Models\MiniProjectSubmission::with(['project.course', 'project.batch', 'student'])
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            })
+            ->latest('created_at')
+            ->take(15)
+            ->get();
+
+        foreach ($miniSubs as $sub) {
+            $studentName = $sub->student->name ?? 'Student';
+            $project = $sub->project ?? $sub->mini_project;
+            $batchCode = $project->batch->batch_code ?? 'Batch';
+            $batchType = $project->batch->batch_type ?? 'Weekend';
+            if ($project && $project->batch && $project->batch->batch_track) {
+                $batchType .= ' (' . $project->batch->batch_track . ')';
+            }
+            $todayActivities->push([
+                'id' => 'mini_' . $sub->id,
+                'type' => 'mini_project',
+                'type_label' => 'Mini Project',
+                'type_icon' => 'fas fa-layer-group',
+                'type_color' => '#ec4899',
+                'name' => $studentName,
+                'initials' => $getInitials($studentName),
+                'color' => $getColor($studentName),
+                'action' => 'Submitted Mini Project: ' . ($project->title ?? 'Mini Project'),
+                'course' => $project->course->title ?? '',
+                'batch' => $batchCode,
+                'batch_type' => $batchType,
+                'time' => $sub->created_at ? $sub->created_at->format('h:i A') : '',
+                'date' => $sub->created_at ? $sub->created_at->format('d M') : '',
+                'timestamp' => $sub->created_at ? $sub->created_at->timestamp : 0,
+                'link' => route('mini_projects.evaluate', $sub->id),
+                'link_text' => 'Evaluate'
+            ]);
+        }
+
+        // 3. Main Project Submissions
+        $mainSubs = \App\Models\MainProjectSubmission::with(['project.course', 'project.batch', 'student'])
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            })
+            ->latest('created_at')
+            ->take(15)
+            ->get();
+
+        foreach ($mainSubs as $sub) {
+            $studentName = $sub->student->name ?? 'Student';
+            $project = $sub->project ?? $sub->main_project;
+            $batchCode = $project->batch->batch_code ?? 'Batch';
+            $batchType = $project->batch->batch_type ?? 'Normal';
+            if ($project && $project->batch && $project->batch->batch_track) {
+                $batchType .= ' (' . $project->batch->batch_track . ')';
+            }
+            $todayActivities->push([
+                'id' => 'main_' . $sub->id,
+                'type' => 'main_project',
+                'type_label' => 'Main Project',
+                'type_icon' => 'fas fa-project-diagram',
+                'type_color' => '#10b981',
+                'name' => $studentName,
+                'initials' => $getInitials($studentName),
+                'color' => $getColor($studentName),
+                'action' => 'Submitted Main Project: ' . ($project->title ?? 'Main Project'),
+                'course' => $project->course->title ?? '',
+                'batch' => $batchCode,
+                'batch_type' => $batchType,
+                'time' => $sub->created_at ? $sub->created_at->format('h:i A') : '',
+                'date' => $sub->created_at ? $sub->created_at->format('d M') : '',
+                'timestamp' => $sub->created_at ? $sub->created_at->timestamp : 0,
+                'link' => route('main_projects.evaluate', $sub->id),
+                'link_text' => 'Evaluate'
+            ]);
+        }
+
+        // 4. Batch Scheduled Classes
+        $schedulesQuery = \App\Models\BatchSchedule::with(['batch.course', 'batch.instructor']);
+        if ($startDate && $endDate) {
+            $schedulesQuery->whereBetween('date', [$startDate, $endDate]);
+        } else {
+            $schedulesQuery->where('date', '>=', now()->subDays(3)->toDateString())
+                           ->where('date', '<=', now()->addDays(7)->toDateString());
+        }
+        $batchSchedules = $schedulesQuery->orderBy('date', 'desc')->orderBy('start_time', 'asc')->take(15)->get();
+
+        foreach ($batchSchedules as $sched) {
+            $instructorName = $sched->batch->instructor->name ?? ($sched->batch->batch_name ?? 'Instructor');
+            $startTime = \Carbon\Carbon::parse($sched->start_time)->format('h:i A');
+            $endTime = \Carbon\Carbon::parse($sched->end_time)->format('h:i A');
+            $batchCode = $sched->batch->batch_code ?? 'Batch';
+            $batchType = $sched->batch->batch_type ?? 'Weekday';
+            if ($sched->batch && $sched->batch->batch_track) {
+                $batchType .= ' (' . $sched->batch->batch_track . ')';
+            }
+            $ts = \Carbon\Carbon::parse($sched->date . ' ' . $sched->start_time)->timestamp;
+
+            $todayActivities->push([
+                'id' => 'sched_' . $sched->id,
+                'type' => 'schedule',
+                'type_label' => 'Live Class',
+                'type_icon' => 'fas fa-calendar-alt',
+                'type_color' => '#f59e0b',
+                'name' => $instructorName,
+                'initials' => $getInitials($instructorName),
+                'color' => $getColor($instructorName),
+                'action' => 'Scheduled Class: ' . ($sched->batch->course->title ?? 'Live Session') . ' (' . $startTime . ' - ' . $endTime . ')',
+                'course' => $sched->batch->course->title ?? '',
+                'batch' => $batchCode,
+                'batch_type' => $batchType,
+                'time' => $startTime,
+                'date' => \Carbon\Carbon::parse($sched->date)->format('d M'),
+                'timestamp' => $ts,
+                'link' => $sched->meeting_link ?: route('batches.show', $sched->batch_id),
+                'link_text' => $sched->meeting_link ? 'Join Meeting' : 'View Batch'
+            ]);
+        }
+
+        // 5. Meetings (Demos, Doubts, Staff Meetings)
+        $meetingsQuery = \App\Models\SessionBooking::with(['admission.contact', 'admission.course', 'admission.batch', 'staff']);
+        if ($startDate && $endDate) {
+            $meetingsQuery->whereBetween('date', [$startDate, $endDate]);
+        } else {
+            $meetingsQuery->where('date', '>=', now()->subDays(3)->toDateString())
+                          ->where('date', '<=', now()->addDays(7)->toDateString());
+        }
+        $meetings = $meetingsQuery->orderBy('date', 'desc')->orderBy('time', 'asc')->take(15)->get();
+
+        foreach ($meetings as $meeting) {
+            $studentName = $meeting->admission->contact->name ?? 'Student';
+            $sessionType = ucfirst($meeting->type ?? 'Meeting');
+            $time = $meeting->time ? \Carbon\Carbon::parse($meeting->time)->format('h:i A') : '';
+            $batchCode = $meeting->admission->batch->batch_code ?? ($sessionType === 'Demo' ? 'DEMO' : 'DOUBT');
+            $batchType = $meeting->admission->batch->batch_type ?? '1-on-1';
+            $ts = \Carbon\Carbon::parse($meeting->date . ' ' . ($meeting->time ?? '00:00:00'))->timestamp;
+
+            $todayActivities->push([
+                'id' => 'meet_' . $meeting->id,
+                'type' => 'meeting',
+                'type_label' => $sessionType . ' Session',
+                'type_icon' => 'fas fa-video',
+                'type_color' => '#8b5cf6',
+                'name' => $studentName,
+                'initials' => $getInitials($studentName),
+                'color' => $getColor($studentName),
+                'action' => $sessionType . ' Meeting: ' . ($meeting->admission->course->title ?? $meeting->topic ?? 'Online Meeting') . ($time ? ' at ' . $time : ''),
+                'course' => $meeting->admission->course->title ?? '',
+                'batch' => $batchCode,
+                'batch_type' => $batchType,
+                'time' => $time,
+                'date' => $meeting->date ? \Carbon\Carbon::parse($meeting->date)->format('d M') : '',
+                'timestamp' => $ts,
+                'link' => $meeting->meet_link,
+                'link_text' => $meeting->meet_link ? 'Connect' : ''
+            ]);
+        }
+
+        // Sort all activities descending by timestamp
+        $todayActivities = $todayActivities->sortByDesc('timestamp')->values();
+
+        // Calculate counts for filter tabs
+        $activityCounts = [
+            'all' => $todayActivities->count(),
+            'assignment' => $todayActivities->where('type', 'assignment')->count(),
+            'mini_project' => $todayActivities->where('type', 'mini_project')->count(),
+            'main_project' => $todayActivities->where('type', 'main_project')->count(),
+            'schedule' => $todayActivities->where('type', 'schedule')->count(),
+            'meeting' => $todayActivities->where('type', 'meeting')->count(),
         ];
 
-        return view('tech.dashboard.index', compact('totalStudents', 'totalBatches', 'todayDemos', 'todayDoubts', 'todayActivities'));
+        return view('tech.dashboard.index', compact('totalStudents', 'totalBatches', 'todayDemos', 'todayDoubts', 'todayActivities', 'activityCounts'));
     }
 }

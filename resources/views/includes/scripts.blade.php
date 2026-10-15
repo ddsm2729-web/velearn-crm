@@ -29,7 +29,7 @@
         toastr.warning("{{ Session::get('warning') }}");
     @endif
 
-    @if($errors->any())
+    @if(isset($errors) && $errors->any())
         @foreach($errors->all() as $error)
             toastr.error("{{ $error }}");
         @endforeach
@@ -37,3 +37,4 @@
 </script>
 
 @stack('script')
+@stack('scripts')

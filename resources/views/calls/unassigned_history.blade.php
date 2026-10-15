@@ -39,8 +39,8 @@
     <div class="container-fluid p-0">
         <!-- Back Button -->
         <div class="mb-3">
-            <a href="{{ route('calls.history') }}" class="btn btn-link text-decoration-none p-0 text-muted">
-                <i class="align-middle" data-feather="arrow-left"></i> Back to Call History
+            <a href="javascript:history.back()" class="btn btn-link text-decoration-none p-0 text-muted">
+                <i class="fas fa-arrow-left me-2"></i> Back to Call History
             </a>
         </div>
 

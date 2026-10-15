@@ -11,6 +11,202 @@
         </div>
     </div>
 
+    <!-- Placement Outreach & Pipeline Overview (Final Placement CRM Workflow) -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fas fa-user-graduate text-primary me-2"></i> Placement Pipeline & Outreach
+                </h5>
+                <p class="text-muted mb-0 small">Monitor student eligibility, applications sent to HRs, and interview outcomes.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('eligible-students.index') }}" class="btn btn-outline-primary btn-sm px-3 fw-bold">
+                    <i class="fas fa-users me-1"></i> Eligible Students
+                </a>
+                <a href="{{ route('applied-openings.index') }}" class="btn btn-primary btn-sm px-3 fw-bold">
+                    <i class="fas fa-briefcase me-1"></i> Applied Openings
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <a href="{{ route('eligible-students.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-info">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Eligible Students</div>
+                        <div class="fs-3 fw-bold text-dark mt-1">{{ $placementStats['eligible_students'] ?? 0 }}</div>
+                        <div class="text-muted small">Cleared for outreach</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('applied-openings.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-primary">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Profile Sent</div>
+                        <div class="fs-3 fw-bold text-primary mt-1">{{ $placementStats['profile_sent'] ?? 0 }}</div>
+                        <div class="text-muted small">Sent to HRs</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('interview-status.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-secondary">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Interview Scheduled</div>
+                        <div class="fs-3 fw-bold text-dark mt-1">{{ $placementStats['interview_scheduled'] ?? 0 }}</div>
+                        <div class="text-muted small">Date confirmed</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('interview-status.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-success">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Selected / Placed</div>
+                        <div class="fs-3 fw-bold text-success mt-1">{{ $placementStats['selected'] ?? 0 }}</div>
+                        <div class="text-muted small">Offers received</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('interview-status.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-danger">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Rejected</div>
+                        <div class="fs-3 fw-bold text-danger mt-1">{{ $placementStats['rejected'] ?? 0 }}</div>
+                        <div class="text-muted small">Not selected</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('interview-status.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-warning">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">On Hold</div>
+                        <div class="fs-3 fw-bold text-warning mt-1">{{ $placementStats['on_hold'] ?? 0 }}</div>
+                        <div class="text-muted small">Result awaited</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('interview-status.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-dark">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Rescheduled</div>
+                        <div class="fs-3 fw-bold text-dark mt-1">{{ $placementStats['rescheduled'] ?? 0 }}</div>
+                        <div class="text-muted small">Pending reslot</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ route('placement-followups.index') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-danger">
+                        <div class="text-uppercase text-muted fw-bold" style="font-size:0.7rem; letter-spacing:0.5px;">Pending Follow-ups</div>
+                        <div class="fs-3 fw-bold text-danger mt-1">{{ $placementStats['pending_followups'] ?? 0 }}</div>
+                        <div class="text-muted small">Follow-up calls due</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Split Grid: Today's Scheduled Interviews & Recent Applications -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="fas fa-calendar-day text-primary me-2"></i> Today's Interviews
+                        </h6>
+                        <a href="{{ route('interview-status.index') }}" class="small text-decoration-none">View all</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0" style="font-size:0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Company</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($todaysInterviews as $ti)
+                                        <tr>
+                                            <td class="fw-semibold">{{ $ti->name }}</td>
+                                            <td>{{ $ti->company }}</td>
+                                            <td>{{ $ti->time ?? '—' }}</td>
+                                            <td>
+                                                <span class="badge bg-primary px-2 py-1">{{ ucfirst($ti->status) }}</span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted">
+                                                No interviews scheduled for today.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="fas fa-inbox text-warning me-2"></i> Recent Student Applications
+                        </h6>
+                        <a href="{{ route('applied-openings.index') }}" class="small text-decoration-none">View all</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0" style="font-size:0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Company & Role</th>
+                                        <th>Applied On</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentApplications as $rapp)
+                                        <tr>
+                                            <td class="fw-semibold">{{ $rapp->user->name ?? 'Student #'.$rapp->user_id }}</td>
+                                            <td>
+                                                <div>{{ $rapp->opening->company->company_name ?? '—' }}</div>
+                                                <div class="text-muted small">{{ $rapp->opening->job_role ?? '—' }}</div>
+                                            </td>
+                                            <td>{{ $rapp->created_at ? $rapp->created_at->format('d M') : '—' }}</td>
+                                            <td>
+                                                <a href="{{ route('applied-openings.show', $rapp->opening_id) }}" class="btn btn-xs btn-outline-primary py-1 px-2" style="font-size:0.75rem;">
+                                                    Review
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted">
+                                                No recent applications.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="border-top pt-4 mb-3">
+        <h5 class="fw-bold text-dark mb-1">
+            <i class="fas fa-graduation-cap text-secondary me-2"></i> Course Projects & Academics
+        </h5>
+        <p class="text-muted small mb-0">Overview of active student projects, assignments, and submissions.</p>
+    </div>
+
     <!-- Global Totals Overview -->
     <div class="row mb-4 g-4">
         <!-- Live Courses Card -->

@@ -10,7 +10,7 @@
             <h1 class="h3">Edit <strong>Blog</strong></h1>
 
             @can('Blog List')
-                <a href="{{ route('blogs-info.index') }}" class="btn btn-theme">Back</a>
+                <a href="javascript:history.back()" class="btn btn-theme"><i class="fas fa-arrow-left me-2"></i> Back</a>
             @endcan
         </div>
 

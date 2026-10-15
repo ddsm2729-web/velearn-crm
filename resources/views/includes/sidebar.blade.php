@@ -853,11 +853,11 @@
 
                 @can('Student Coordinator Followup')
                     <li class="sidebar-item {{ Request::is('student-followups*') ? 'active' : '' }}">
-                        <a class="sidebar-link" href="#">
+                        <a class="sidebar-link" href="{{ route('student-followups.index') }}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#D97706" viewBox="0 0 24 24">
                                 <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-8 8c0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6V3l4 4-4 4V8c-3.31 0-6 2.69-6 6z"/>
                             </svg>
-                            <span class="align-middle">Student Followup</span>
+                            <span class="align-middle">Follow-ups / Leads</span>
                         </a>
                     </li>
                 @endcan

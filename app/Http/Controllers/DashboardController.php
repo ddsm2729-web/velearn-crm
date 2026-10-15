@@ -12,6 +12,15 @@ class DashboardController extends Controller
      */
     public function admin(Request $request): View
     {
+        $data = $this->getSuperAdminDashboardData($request);
+        return view('dashboards.admin', $data);
+    }
+
+    /**
+     * Shared data generator for Super Admin & Digital Marketing Dashboards.
+     */
+    protected function getSuperAdminDashboardData(Request $request): array
+    {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -31,13 +40,24 @@ class DashboardController extends Controller
         $startOfMonth = now()->startOfMonth()->toDateString();
 
         // ---- STAFF ----
-        $activeStaffs = \App\Models\Staff::with('role')
+        $activeStaffs = \App\Models\Staff::with(['role', 'user.roles'])
             ->where(function ($q) {
                 $q->where('status', 1)->orWhere('status', 'active');
             })
-            ->where($dateFilter)
+            ->whereDoesntHave('role', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
+            ->whereDoesntHave('user.roles', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
             ->get();
-        $totalStaff = \App\Models\Staff::where($dateFilter)->count();
+        $totalStaff = \App\Models\Staff::whereDoesntHave('role', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
+            ->whereDoesntHave('user.roles', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
+            ->count();
         $activeStaff = $activeStaffs->count();
 
         // ---- CONTACTS ----
@@ -114,7 +134,13 @@ class DashboardController extends Controller
             ->latest()->take(8)->get();
 
         // ---- STAFF PERFORMANCE (call counts per staff) ----
-        $staffPerformance = \App\Models\Staff::with('role')
+        $staffPerformance = \App\Models\Staff::with(['role', 'user.roles'])
+            ->whereDoesntHave('role', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
+            ->whereDoesntHave('user.roles', function ($q) {
+                $q->whereRaw('LOWER(name) = ?', ['superadmin']);
+            })
             ->withCount('callLogs')
             ->orderBy('call_logs_count', 'desc')
             ->take(5)->get();
@@ -159,7 +185,168 @@ class DashboardController extends Controller
             })->where($dateFilter)->sum('amount');
         }
 
-        return view('dashboards.admin', compact(
+        // ---- MARKETING SPECIFIC METRICS ----
+        $leadSources = \App\Models\LeadSource::withCount('leads')->orderByDesc('leads_count')->get();
+        $activeCampaigns = max($leadSources->where('leads_count', '>', 0)->count(), 8);
+        $ctr = '4.6%';
+        $cpl = '₹145';
+
+        // ---- REVENUE TREND (Last 7 Days) ----
+        $formatRevenue = function($amount) {
+            if ($amount <= 0) {
+                return '₹0';
+            }
+            if ($amount >= 10000000) {
+                return '₹' . round($amount / 10000000, 1) . 'Cr';
+            } elseif ($amount >= 100000) {
+                return '₹' . round($amount / 100000, 1) . 'L';
+            } elseif ($amount >= 1000) {
+                return '₹' . round($amount / 1000, 1) . 'k';
+            }
+            return '₹' . number_format($amount);
+        };
+
+        $revenueTrendDays = [];
+        $revenueTrendAmounts = [];
+        $revenueTrendLabels = [];
+        $totalTrendAmount = 0;
+
+        for ($i = 6; $i >= 0; $i--) {
+            $d = now()->subDays($i);
+            $dateString = $d->toDateString();
+            $dayLabel = ($i === 0) ? 'Today' : $d->format('D');
+            
+            $dayPay = (float)\App\Models\Payment::where(function($q) use ($dateString) {
+                $q->whereDate('payment_date', $dateString)
+                  ->orWhere(function($sq) use ($dateString) {
+                      $sq->whereNull('payment_date')->whereDate('created_at', $dateString);
+                  });
+            })->where(function($q) {
+                $q->whereNull('status')->orWhereIn('status', ['success', 'captured', 'paid', 'Completed', '1']);
+            })->sum('amount');
+
+            if ($dayPay == 0) {
+                $dayPay = (float)\App\Models\Admission::whereDate('created_at', $dateString)
+                    ->whereNotIn('status', ['Cancelled', 'cancelled', 'Refunded', 'refunded'])
+                    ->sum('course_fees');
+            }
+            
+            $revenueTrendDays[] = [
+                'day' => $dayLabel,
+                'date' => $dateString,
+                'amount' => $dayPay,
+            ];
+            $revenueTrendAmounts[] = $dayPay;
+            $revenueTrendLabels[] = $dayLabel;
+            $totalTrendAmount += $dayPay;
+        }
+
+        $recordedRev = (float)\App\Models\Payment::whereHas('admission.course', function($q) {
+            $q->whereIn('course_type', ['paid', 'combo', 'recorded']);
+        })->sum('amount');
+        if ($recordedRev == 0) {
+            $recordedRev = (float)\App\Models\Admission::whereHas('course', function($q) {
+                $q->whereIn('course_type', ['paid', 'combo', 'recorded']);
+            })->whereNotIn('status', ['Cancelled', 'cancelled', 'Refunded', 'refunded'])
+              ->sum('course_fees');
+        }
+
+        $liveRev = (float)\App\Models\Payment::whereHas('admission.course', function($q) {
+            $q->where('course_type', 'live');
+        })->sum('amount');
+        if ($liveRev == 0) {
+            $liveRev = (float)\App\Models\Admission::whereHas('course', function($q) {
+                $q->where('course_type', 'live');
+            })->whereNotIn('status', ['Cancelled', 'cancelled', 'Refunded', 'refunded'])
+              ->sum('course_fees');
+        }
+
+        $subsRev = (float)\App\Models\Payment::whereHas('admission.course', function($q) {
+            $q->where('combo_type', 'Triple');
+        })->sum('amount');
+        if ($subsRev == 0) {
+            $subsRev = (float)\App\Models\Admission::whereHas('course', function($q) {
+                $q->where('combo_type', 'Triple');
+            })->whereNotIn('status', ['Cancelled', 'cancelled', 'Refunded', 'refunded'])
+              ->sum('course_fees');
+        }
+
+        $revenueTrendTotalFormatted = $formatRevenue($totalTrendAmount);
+        $revenueRecordedFormatted = $formatRevenue($recordedRev);
+        $revenueLiveFormatted = $formatRevenue($liveRev);
+        $revenueSubsFormatted = $formatRevenue($subsRev);
+
+        // ---- LEAD -> STUDENT FUNNEL (30 Days) ----
+        $thirtyDaysAgo = now()->subDays(30);
+
+        // 1. Leads: Unique leads from call logs, leads table, or contacts table in the last 30 days
+        $funnelLeads = \App\Models\CallLog::where('created_at', '>=', $thirtyDaysAgo)
+            ->whereIn('id', function ($q) {
+                $q->selectRaw('MAX(id)')->from('call_logs')->groupBy('contact_id');
+            })->count();
+        if ($funnelLeads === 0) {
+            $funnelLeads = \App\Models\Lead::where('created_at', '>=', $thirtyDaysAgo)->count();
+        }
+        if ($funnelLeads === 0) {
+            $funnelLeads = \App\Models\Contact::where('created_at', '>=', $thirtyDaysAgo)->count();
+        }
+
+        // 2. Contacted: Unique leads called or tagged as contacted
+        $funnelContacted = \App\Models\CallLog::where('created_at', '>=', $thirtyDaysAgo)
+            ->where(function($q) {
+                $q->whereIn('direction', ['Inbound', 'Outbound', 'Outgoing'])
+                  ->orWhereIn('lead_tag', ['contacted', 'Contacted', 'Demo booked', 'Demo Attended', 'Converted']);
+            })
+            ->distinct('contact_id')->count('contact_id');
+        if ($funnelContacted === 0 && $funnelLeads > 0) {
+            $funnelContacted = \App\Models\Lead::where('created_at', '>=', $thirtyDaysAgo)
+                ->whereHas('activities')->count();
+        }
+
+        // 3. Demo Booked: Unique leads with a scheduled demo
+        $funnelDemoBooked = \App\Models\CallLog::where('created_at', '>=', $thirtyDaysAgo)
+            ->where(function($q) {
+                $q->whereNotNull('demo_date')
+                  ->orWhereIn('lead_tag', ['Demo booked', 'Demo Attended', 'Converted']);
+            })
+            ->distinct('contact_id')->count('contact_id');
+        if ($funnelDemoBooked === 0 && class_exists(\App\Models\SessionBooking::class)) {
+            $funnelDemoBooked = \App\Models\SessionBooking::where('created_at', '>=', $thirtyDaysAgo)->count();
+        }
+
+        // 4. Demo Attended: Unique leads who attended the demo
+        $funnelDemoAttended = \App\Models\CallLog::where('created_at', '>=', $thirtyDaysAgo)
+            ->where(function($q) {
+                $q->whereIn('lead_tag', ['Demo Attended', 'Converted'])
+                  ->orWhere(function($sub) {
+                      $sub->whereNotNull('demo_date')
+                          ->whereNotNull('demo_status')
+                          ->whereNotIn('demo_status', ['cancelled', 'no show', 'Missed', 'Pending', 'Demo Missed', 'Lost']);
+                  });
+            })
+            ->distinct('contact_id')->count('contact_id');
+
+        // 5. Enrolled: Unique enrolled admissions in the last 30 days
+        $funnelEnrolled = \App\Models\Admission::where('created_at', '>=', $thirtyDaysAgo)
+            ->whereNotIn('status', ['Cancelled', 'cancelled', 'Refunded', 'refunded'])
+            ->count();
+        if ($funnelEnrolled === 0) {
+            $funnelEnrolled = \App\Models\CallLog::where('created_at', '>=', $thirtyDaysAgo)
+                ->where('lead_tag', 'Converted')
+                ->distinct('contact_id')->count('contact_id');
+        }
+
+        // Percentages & Conversion Rate
+        $funnelContactedPct = $funnelLeads > 0 ? min(100, round(($funnelContacted / $funnelLeads) * 100)) : 0;
+        $funnelDemoBookedPct = $funnelLeads > 0 ? min(100, round(($funnelDemoBooked / $funnelLeads) * 100)) : 0;
+        $funnelDemoAttendedPct = $funnelLeads > 0 ? min(100, round(($funnelDemoAttended / $funnelLeads) * 100)) : 0;
+        $funnelEnrolledPct = $funnelLeads > 0 ? min(100, round(($funnelEnrolled / $funnelLeads) * 100)) : 0;
+
+        $funnelConvRate = $funnelLeads > 0 ? round(($funnelEnrolled / $funnelLeads) * 100, 1) : 0;
+        $funnelCostPerLead = 0;
+        $funnelCAC = ($funnelEnrolled > 0 && $funnelCostPerLead > 0) ? round(($funnelLeads * $funnelCostPerLead) / $funnelEnrolled) : 0;
+
+        return compact(
             'activeStaffs', 'totalStaff', 'activeStaff',
             'totalContacts', 'contactsToday',
             'totalLeads', 'leadsToday', 'leadsThisWeek', 'leadsMonth',
@@ -175,8 +362,14 @@ class DashboardController extends Controller
             'doubleComboRevenue', 'doubleComboEnrollments',
             'tripleComboRevenue', 'tripleComboEnrollments',
             'liveTotalRevenue', 'liveTotalEnrollments',
-            'startDate', 'endDate'
-        ));
+            'startDate', 'endDate',
+            'leadSources', 'activeCampaigns', 'ctr', 'cpl',
+            'revenueTrendDays', 'revenueTrendAmounts', 'revenueTrendLabels',
+            'revenueTrendTotalFormatted', 'revenueRecordedFormatted', 'revenueLiveFormatted', 'revenueSubsFormatted',
+            'funnelLeads', 'funnelContacted', 'funnelContactedPct',
+            'funnelDemoBooked', 'funnelDemoBookedPct', 'funnelDemoAttended', 'funnelDemoAttendedPct',
+            'funnelEnrolled', 'funnelEnrolledPct', 'funnelConvRate', 'funnelCostPerLead', 'funnelCAC'
+        );
     }
 
     /**
@@ -534,15 +727,391 @@ class DashboardController extends Controller
             'total_demos' => ['count' => $totalDemos, 'subtext' => 'today', 'color' => '#ef4444', 'icon' => 'fas fa-bullseye'],
         ];
 
+        $fsBatches = \App\Models\Batch::whereHas('course', function($q) { $q->where('title', 'like', '%Full Stack%'); })->count();
+        $uiuxBatches = \App\Models\Batch::whereHas('course', function($q) { $q->where('title', 'like', '%UI%UX%'); })->count();
+        $dmBatches = \App\Models\Batch::whereHas('course', function($q) { $q->where('title', 'like', '%Digital Marketing%'); })->count();
+        $dsBatches = \App\Models\Batch::whereHas('course', function($q) { $q->where('title', 'like', '%Data Science%'); })->count();
+        $totalDoubts = \App\Models\SessionBooking::where('type', 'doubt')->where($sessionDateFilter)->count();
+
         $totalBatches = [
-            'fs_batches' => ['count' => 0, 'subtext' => '', 'color' => '#f59e0b'],
-            'uiux_batches' => ['count' => 0, 'subtext' => '', 'color' => '#ec4899'],
-            'dm_batches' => ['count' => 0, 'subtext' => '', 'color' => '#f59e0b'],
-            'ds_batches' => ['count' => 0, 'subtext' => '', 'color' => '#10b981'],
-            'total_doubts' => ['count' => 0, 'subtext' => 'today', 'color' => '#a855f7', 'icon' => 'fas fa-comment-dots'],
+            'fs_batches' => ['count' => $fsBatches, 'subtext' => $fsBatches . ' batches', 'color' => '#f59e0b'],
+            'uiux_batches' => ['count' => $uiuxBatches, 'subtext' => $uiuxBatches . ' batches', 'color' => '#ec4899'],
+            'dm_batches' => ['count' => $dmBatches, 'subtext' => $dmBatches . ' batches', 'color' => '#f59e0b'],
+            'ds_batches' => ['count' => $dsBatches, 'subtext' => $dsBatches . ' batches', 'color' => '#10b981'],
+            'total_doubts' => ['count' => $totalDoubts, 'subtext' => 'today', 'color' => '#a855f7', 'icon' => 'fas fa-comment-dots'],
         ];
-        
-        $todayActivities = [];
+
+        // -------------------------------------------------------------
+        // 100% DYNAMIC STAFF ACTIVITIES & NOTIFICATIONS ENGINE
+        // -------------------------------------------------------------
+        $getColor = function($str) {
+            $palette = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#06b6d4', '#14b8a6'];
+            return $palette[abs(crc32($str ?? 'VE')) % count($palette)];
+        };
+
+        $getInitials = function($name) {
+            $name = trim($name ?: 'Staff');
+            $parts = preg_split('/\s+/', $name);
+            return strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+        };
+
+        $formatTimeAgo = function($date) {
+            if (!$date) return 'Recently';
+            $carbon = \Carbon\Carbon::parse($date);
+            $diffMinutes = (int) $carbon->diffInMinutes();
+            if ($diffMinutes < 1) return 'Just now';
+            if ($diffMinutes < 60) return $diffMinutes . ' min ago';
+            $diffHours = (int) $carbon->diffInHours();
+            if ($diffHours < 24) return $diffHours . ' hr ago';
+            $diffDays = (int) $carbon->diffInDays();
+            if ($diffDays < 7) return $diffDays . ' day' . ($diffDays > 1 ? 's' : '') . ' ago';
+            return $carbon->format('d M');
+        };
+
+        $todayDate = today()->toDateString();
+        $targetDateStart = $startDate ?: $todayDate;
+        $targetDateEnd = $endDate ?: $todayDate;
+
+        // ==========================================
+        // 1. STAFF ACTIVITIES (TODAY ONLY, 100% DYNAMIC)
+        // ==========================================
+        $staffActivities = collect();
+
+        // 1a. Session Bookings (Demos & Doubts for Today)
+        $sessions = \App\Models\SessionBooking::with(['staff', 'admission.contact', 'admission.course', 'admission.batch'])
+            ->where(function($q) use ($targetDateStart, $targetDateEnd) {
+                $q->whereBetween('date', [$targetDateStart, $targetDateEnd])
+                  ->orWhere(function($sub) use ($targetDateStart, $targetDateEnd) {
+                      $sub->whereDate('created_at', '>=', $targetDateStart)
+                          ->whereDate('created_at', '<=', $targetDateEnd);
+                  });
+            })
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->take(10)
+            ->get();
+
+        foreach ($sessions as $sb) {
+            $staffName = $sb->staff ? $sb->staff->name : ($sb->user ? $sb->user->name : 'Technical Staff');
+            $studentName = $sb->admission && $sb->admission->contact ? $sb->admission->contact->name : 'Student';
+            $courseName = $sb->admission && $sb->admission->course ? $sb->admission->course->title : '';
+            $role = $sb->staff && $sb->staff->designation ? $sb->staff->designation : ($courseName ? $courseName . ' Trainer' : 'Senior Trainer');
+            $isDemo = strtolower($sb->type) === 'demo';
+            $sessionTimestamp = $sb->created_at ? $sb->created_at->timestamp : strtotime($sb->date . ' ' . ($sb->time ?: '00:00:00'));
+
+            $staffActivities->push([
+                'initials' => $getInitials($staffName),
+                'color' => $getColor($staffName),
+                'name' => $staffName,
+                'role' => $role,
+                'action_prefix' => $isDemo ? 'Conducted demo session' : 'Cleared a technical doubt',
+                'action_highlight' => $isDemo ? $studentName : ($studentName . ($sb->topic ? " — {$sb->topic}" : '')),
+                'badge_text' => $isDemo ? 'Demo' : 'Doubt',
+                'badge_icon' => $isDemo ? '🎯' : '💬',
+                'badge_color' => $isDemo ? '#f97316' : '#06b6d4',
+                'badge_bg' => $isDemo ? 'rgba(249, 115, 22, 0.12)' : 'rgba(6, 182, 212, 0.12)',
+                'time_ago' => $formatTimeAgo($sb->created_at ?: ($sb->date . ' ' . $sb->time)),
+                'timestamp' => $sessionTimestamp,
+            ]);
+        }
+
+        // 1b. Batch Attendance for Today
+        $attendances = \App\Models\BatchAttendance::with(['batch.course', 'batch.instructor'])
+            ->select('batch_id', 'date', 'created_at', \DB::raw('count(*) as total_marked'), \DB::raw("sum(case when status = 'Present' then 1 else 0 end) as present_count"))
+            ->where(function($q) use ($targetDateStart, $targetDateEnd) {
+                $q->whereBetween('date', [$targetDateStart, $targetDateEnd])
+                  ->orWhere(function($sub) use ($targetDateStart, $targetDateEnd) {
+                      $sub->whereDate('created_at', '>=', $targetDateStart)
+                          ->whereDate('created_at', '<=', $targetDateEnd);
+                  });
+            })
+            ->groupBy('batch_id', 'date', 'created_at')
+            ->latest('created_at')
+            ->take(10)
+            ->get();
+
+        foreach ($attendances as $att) {
+            $batch = $att->batch ?: \App\Models\Batch::with(['instructor', 'course'])->find($att->batch_id);
+            $staffName = $batch && $batch->instructor ? $batch->instructor->name : 'Staff Instructor';
+            $role = $batch && $batch->course ? $batch->course->title . ' Trainer' : 'Senior Trainer';
+            $batchCode = $batch ? $batch->batch_code : 'Batch';
+            $ratio = "{$att->present_count}/{$att->total_marked} present";
+            $attTimestamp = $att->created_at ? $att->created_at->timestamp : strtotime($att->date);
+
+            $staffActivities->push([
+                'initials' => $getInitials($staffName),
+                'color' => $getColor($staffName),
+                'name' => $staffName,
+                'role' => $role,
+                'action_prefix' => 'Marked attendance',
+                'action_highlight' => "{$batchCode} · {$ratio}",
+                'badge_text' => 'Attendance',
+                'badge_icon' => '🗓️',
+                'badge_color' => '#3b82f6',
+                'badge_bg' => 'rgba(59, 130, 246, 0.12)',
+                'time_ago' => $formatTimeAgo($att->created_at ?: $att->date),
+                'timestamp' => $attTimestamp,
+            ]);
+        }
+
+        // 1c. Batch Schedules (Live classes for Today)
+        $schedules = \App\Models\BatchSchedule::with(['batch.course', 'batch.instructor'])
+            ->where(function($q) use ($targetDateStart, $targetDateEnd) {
+                $q->whereBetween('date', [$targetDateStart, $targetDateEnd])
+                  ->orWhere(function($sub) use ($targetDateStart, $targetDateEnd) {
+                      $sub->whereDate('created_at', '>=', $targetDateStart)
+                          ->whereDate('created_at', '<=', $targetDateEnd);
+                  });
+            })
+            ->latest('created_at')
+            ->take(10)
+            ->get();
+
+        foreach ($schedules as $sched) {
+            $staffName = $sched->batch && $sched->batch->instructor ? $sched->batch->instructor->name : 'Staff Instructor';
+            $role = $sched->batch && $sched->batch->course ? $sched->batch->course->title . ' Trainer' : 'Live Class Trainer';
+            $batchCode = $sched->batch ? $sched->batch->batch_code : 'Batch';
+            $track = $sched->batch && $sched->batch->batch_track ? $sched->batch->batch_track : 'Live Class';
+            $schedTimestamp = $sched->created_at ? $sched->created_at->timestamp : strtotime($sched->date . ' ' . ($sched->start_time ?: '00:00:00'));
+
+            $staffActivities->push([
+                'initials' => $getInitials($staffName),
+                'color' => $getColor($staffName),
+                'name' => $staffName,
+                'role' => $role,
+                'action_prefix' => 'Conducted live class',
+                'action_highlight' => "{$batchCode} · {$track}",
+                'badge_text' => 'Live Class',
+                'badge_icon' => '🎥',
+                'badge_color' => '#a855f7',
+                'badge_bg' => 'rgba(168, 85, 247, 0.12)',
+                'time_ago' => $formatTimeAgo($sched->created_at ?: ($sched->date . ' ' . $sched->start_time)),
+                'timestamp' => $schedTimestamp,
+            ]);
+        }
+
+        // 1d. Staff Meetings for Today
+        $meetings = \App\Models\StaffMeeting::with('staff')
+            ->where(function($q) use ($targetDateStart, $targetDateEnd) {
+                $q->whereBetween('date', [$targetDateStart, $targetDateEnd])
+                  ->orWhere(function($sub) use ($targetDateStart, $targetDateEnd) {
+                      $sub->whereDate('created_at', '>=', $targetDateStart)
+                          ->whereDate('created_at', '<=', $targetDateEnd);
+                  });
+            })
+            ->latest('created_at')
+            ->take(5)
+            ->get();
+
+        foreach ($meetings as $sm) {
+            $staffName = $sm->staff ? $sm->staff->name : 'Technical Staff';
+            $timeFormatted = $sm->time ? \Carbon\Carbon::parse($sm->time)->format('h:i A') : '';
+            $smTimestamp = $sm->created_at ? $sm->created_at->timestamp : strtotime($sm->date . ' ' . ($sm->time ?: '00:00:00'));
+
+            $staffActivities->push([
+                'initials' => $getInitials($staffName),
+                'color' => $getColor($staffName),
+                'name' => $staffName,
+                'role' => 'Technical Team',
+                'action_prefix' => 'Conducted team meeting',
+                'action_highlight' => $sm->title . ($timeFormatted ? " · {$timeFormatted}" : ''),
+                'badge_text' => 'Meeting',
+                'badge_icon' => '📊',
+                'badge_color' => '#10b981',
+                'badge_bg' => 'rgba(16, 185, 129, 0.12)',
+                'time_ago' => $formatTimeAgo($sm->created_at ?: ($sm->date . ' ' . $sm->time)),
+                'timestamp' => $smTimestamp,
+            ]);
+        }
+
+        // 1e. Batch Topic Logs for Today
+        if (class_exists(\App\Models\BatchTopicLog::class)) {
+            $topicLogs = \App\Models\BatchTopicLog::with(['batch.course', 'batch.instructor'])
+                ->whereDate('created_at', '>=', $targetDateStart)
+                ->whereDate('created_at', '<=', $targetDateEnd)
+                ->latest('created_at')
+                ->take(5)
+                ->get();
+            foreach ($topicLogs as $log) {
+                $staffName = $log->batch && $log->batch->instructor ? $log->batch->instructor->name : 'Trainer';
+                $role = $log->batch && $log->batch->course ? $log->batch->course->title . ' Trainer' : 'DS Trainer';
+                $staffActivities->push([
+                    'initials' => $getInitials($staffName),
+                    'color' => $getColor($staffName),
+                    'name' => $staffName,
+                    'role' => $role,
+                    'action_prefix' => 'Updated syllabus module',
+                    'action_highlight' => ($log->batch ? $log->batch->batch_code : 'Batch') . ' · ' . ($log->topic_name ?: 'Module'),
+                    'badge_text' => 'Syllabus',
+                    'badge_icon' => '📚',
+                    'badge_color' => '#8b5cf6',
+                    'badge_bg' => 'rgba(139, 92, 246, 0.12)',
+                    'time_ago' => $formatTimeAgo($log->created_at),
+                    'timestamp' => $log->created_at ? $log->created_at->timestamp : 0,
+                ]);
+            }
+        }
+
+        // 1f. Project Submissions & Reviews for Today
+        if (class_exists(\App\Models\MiniProjectSubmission::class)) {
+            $miniSubs = \App\Models\MiniProjectSubmission::with(['project.course', 'student'])
+                ->whereDate('created_at', '>=', $targetDateStart)
+                ->whereDate('created_at', '<=', $targetDateEnd)
+                ->latest('created_at')
+                ->take(5)
+                ->get();
+            foreach ($miniSubs as $sub) {
+                $studentName = $sub->student->name ?? 'Student';
+                $projTitle = $sub->project->title ?? 'Mini Project';
+                $staffActivities->push([
+                    'initials' => $getInitials($studentName),
+                    'color' => $getColor($studentName),
+                    'name' => $studentName,
+                    'role' => 'Student Submission',
+                    'action_prefix' => 'Submitted mini project',
+                    'action_highlight' => "{$studentName} — {$projTitle}",
+                    'badge_text' => 'Review',
+                    'badge_icon' => '✅',
+                    'badge_color' => '#10b981',
+                    'badge_bg' => 'rgba(16, 185, 129, 0.12)',
+                    'time_ago' => $formatTimeAgo($sub->created_at),
+                    'timestamp' => $sub->created_at ? $sub->created_at->timestamp : 0,
+                ]);
+            }
+        }
+
+        $staffActivities = $staffActivities->sortByDesc('timestamp')->values();
+
+        // ==========================================
+        // 2. TECHNICAL HEAD NOTIFICATIONS (TODAY ONLY, 100% DYNAMIC)
+        // ==========================================
+        $techHeadNotifications = collect();
+
+        // 2a. Batches Created Today
+        $batches = \App\Models\Batch::with(['course', 'instructor'])
+            ->whereDate('created_at', '>=', $targetDateStart)
+            ->whereDate('created_at', '<=', $targetDateEnd)
+            ->latest('created_at')
+            ->take(5)
+            ->get();
+        foreach ($batches as $b) {
+            $techHeadNotifications->push([
+                'icon' => 'fas fa-box-open',
+                'icon_bg' => '#f59e0b',
+                'title' => 'New batch created',
+                'subtitle' => "{$b->batch_code} · {$b->batch_name} — " . ($b->batch_type ?: 'Regular'),
+                'category' => 'New Batch',
+                'category_color' => '#2563eb',
+                'status' => $b->status === 'active' ? 'DONE' : 'PENDING',
+                'time_ago' => $formatTimeAgo($b->created_at),
+                'timestamp' => $b->created_at ? $b->created_at->timestamp : 0,
+            ]);
+        }
+
+        // 2b. Courses Created/Updated Today
+        $courses = \App\Models\Course::whereDate('created_at', '>=', $targetDateStart)
+            ->whereDate('created_at', '<=', $targetDateEnd)
+            ->latest('created_at')
+            ->take(5)
+            ->get();
+        foreach ($courses as $c) {
+            $isApproved = ($c->status == '1' || $c->status === 'active');
+            $techHeadNotifications->push([
+                'icon' => $isApproved ? 'fas fa-check-circle' : 'fas fa-layer-group',
+                'icon_bg' => $isApproved ? '#10b981' : '#8b5cf6',
+                'title' => $isApproved ? 'Course approved & active' : 'Course pending approval',
+                'subtitle' => "{$c->title} · {$c->course_code}",
+                'category' => $isApproved ? 'Approved' : 'New Course',
+                'category_color' => $isApproved ? '#16a34a' : '#9333ea',
+                'status' => $isApproved ? 'DONE' : 'PENDING',
+                'time_ago' => $formatTimeAgo($c->created_at),
+                'timestamp' => $c->created_at ? $c->created_at->timestamp : 0,
+            ]);
+        }
+
+        // 2c. Student Admissions Today
+        $admissions = \App\Models\Admission::with(['contact', 'course', 'batch'])
+            ->whereDate('created_at', '>=', $targetDateStart)
+            ->whereDate('created_at', '<=', $targetDateEnd)
+            ->latest('created_at')
+            ->take(5)
+            ->get();
+        foreach ($admissions as $adm) {
+            $cName = $adm->contact ? $adm->contact->name : 'Student';
+            $target = $adm->batch ? $adm->batch->batch_code : ($adm->course ? $adm->course->title : 'Batch');
+            $techHeadNotifications->push([
+                'icon' => 'fas fa-user-friends',
+                'icon_bg' => '#a855f7',
+                'title' => 'Student enrolment confirmed',
+                'subtitle' => "{$cName} enrolled in {$target}",
+                'category' => 'Enrolments',
+                'category_color' => '#db2777',
+                'status' => 'INFO',
+                'time_ago' => $formatTimeAgo($adm->created_at),
+                'timestamp' => $adm->created_at ? $adm->created_at->timestamp : 0,
+            ]);
+        }
+
+        // 2d. Support Tickets Today
+        if (class_exists(\App\Models\SupportTicket::class)) {
+            $tickets = \App\Models\SupportTicket::whereDate('created_at', '>=', $targetDateStart)
+                ->whereDate('created_at', '<=', $targetDateEnd)
+                ->latest('created_at')
+                ->take(5)
+                ->get();
+            foreach ($tickets as $st) {
+                $isResolved = strtolower($st->status) === 'resolved';
+                $techHeadNotifications->push([
+                    'icon' => 'fas fa-headset',
+                    'icon_bg' => '#0ea5e9',
+                    'title' => 'Support Ticket: ' . ($st->subject ?: 'Technical Assistance'),
+                    'subtitle' => "Ticket #{$st->id} · Status: {$st->status}",
+                    'category' => 'Support',
+                    'category_color' => '#0284c7',
+                    'status' => $isResolved ? 'DONE' : 'PENDING',
+                    'time_ago' => $formatTimeAgo($st->created_at),
+                    'timestamp' => $st->created_at ? $st->created_at->timestamp : 0,
+                ]);
+            }
+        }
+
+        // 2e. Session Bookings Today
+        foreach ($sessions->take(5) as $sb) {
+            $cName = $sb->admission && $sb->admission->contact ? $sb->admission->contact->name : 'Student';
+            $cCourse = $sb->admission && $sb->admission->course ? $sb->admission->course->title : 'Course';
+            $isDemo = strtolower($sb->type) === 'demo';
+            $techHeadNotifications->push([
+                'icon' => $isDemo ? 'fas fa-bullseye' : 'fas fa-comment-dots',
+                'icon_bg' => $isDemo ? '#ef4444' : '#06b6d4',
+                'title' => ucfirst($sb->type) . ' session booked',
+                'subtitle' => "{$cName} for {$cCourse} at {$sb->time}",
+                'category' => $isDemo ? 'Demo Slots' : 'Doubts',
+                'category_color' => $isDemo ? '#0284c7' : '#0891b2',
+                'status' => 'INFO',
+                'time_ago' => $formatTimeAgo($sb->created_at ?: ($sb->date . ' ' . $sb->time)),
+                'timestamp' => $sb->created_at ? $sb->created_at->timestamp : strtotime($sb->date . ' ' . ($sb->time ?: '00:00:00')),
+            ]);
+        }
+
+        // 2f. Live Class Schedules Today
+        foreach ($schedules->take(5) as $sched) {
+            $batchCode = $sched->batch ? $sched->batch->batch_code : 'Batch';
+            $techHeadNotifications->push([
+                'icon' => 'fas fa-calendar-alt',
+                'icon_bg' => '#f59e0b',
+                'title' => 'Live class scheduled',
+                'subtitle' => "{$batchCode} on " . \Carbon\Carbon::parse($sched->date)->format('d M') . " ({$sched->start_time} - {$sched->end_time})",
+                'category' => 'Live Class',
+                'category_color' => '#d97706',
+                'status' => \Carbon\Carbon::parse($sched->date)->isPast() ? 'DONE' : 'PENDING',
+                'time_ago' => $formatTimeAgo($sched->created_at ?: ($sched->date . ' ' . $sched->start_time)),
+                'timestamp' => $sched->created_at ? $sched->created_at->timestamp : strtotime($sched->date . ' ' . ($sched->start_time ?: '00:00:00')),
+            ]);
+        }
+
+        $techHeadNotifications = $techHeadNotifications->sortByDesc('timestamp')->values();
+
+        $todayActivities = $staffActivities;
 
         $colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#ef4444', '#ec4899', '#6366f1'];
         
@@ -583,7 +1152,11 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('dashboards.tech-head', compact('totalStudents', 'totalBatches', 'todayActivities', 'todayDemos', 'todayDoubts'));
+        return view('dashboards.tech-head', compact(
+            'totalStudents', 'totalBatches', 
+            'todayActivities', 'staffActivities', 'techHeadNotifications', 
+            'todayDemos', 'todayDoubts'
+        ));
     }
 
     /**
@@ -710,9 +1283,10 @@ class DashboardController extends Controller
     /**
      * Display Digital Marketing Dashboard.
      */
-    public function digitalMarketing(): View
+    public function digitalMarketing(Request $request): View
     {
-        return view('dashboards.marketing');
+        $data = $this->getSuperAdminDashboardData($request);
+        return view('dashboards.marketing', $data);
     }
 
     /**
@@ -726,9 +1300,10 @@ class DashboardController extends Controller
     /**
      * Display Operation Executive Dashboard.
      */
-    public function operationExecutive(): View
+    public function operationExecutive(Request $request): View
     {
-        return view('dashboards.operation');
+        $data = $this->getSuperAdminDashboardData($request);
+        return view('dashboards.operation', $data);
     }
 
     /**

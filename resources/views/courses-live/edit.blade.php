@@ -10,7 +10,7 @@
         <h1 class="h3">Edit <strong>Live Course</strong></h1>
 
         @can('Course List')
-        <a href="{{ route('courses.live.index') }}" class="btn btn-theme">Back</a>
+        <a href="javascript:history.back()" class="btn btn-theme"><i class="fas fa-arrow-left me-2"></i> Back</a>
         @endcan
     </div>
 

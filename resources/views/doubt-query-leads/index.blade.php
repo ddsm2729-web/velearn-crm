@@ -81,7 +81,7 @@
                             <th>SUBJECT / DESCRIPTION</th>
                             <th>SLOT TIME</th>
                             <th>DATE</th>
-                            <th>ACTION</th>
+                            <th class="text-end">ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="dqlTableBodyTech">
@@ -108,37 +108,63 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $ticket->user->phonenumber ?? '+91 — — — — — —' }}</td>
                                 <td>
-                                    {{ \Illuminate\Support\Str::limit($ticket->title ?? $ticket->subject, 50) }}
+                                    <span style="white-space: nowrap; font-size: 0.82rem; color: #475569;">
+                                        <i class="fa-solid fa-phone me-1 text-muted opacity-40"></i>{{ $ticket->user->phonenumber ?? '+91 — — — — — —' }}
+                                    </span>
+                                </td>
+                                <td style="max-width: 220px;">
+                                    <div class="text-truncate" title="{{ $ticket->title ?? $ticket->subject }}" style="font-size: 0.85rem; color: #1e293b; font-weight: 500;">
+                                        {{ $ticket->title ?? $ticket->subject ?? '—' }}
+                                    </div>
                                 </td>
                                 <td>
                                     @if ($ticket->preferred_slot)
-                                        <div style="display:flex; align-items:center; gap:0.5rem;">
-                                            <a href="#" class="view-link" data-id="{{ $ticket->id }}"
-                                                data-title="{{ $ticket->title ?? $ticket->subject }}"
-                                                data-description="{{ $ticket->description }}"
-                                                data-slot="{{ $ticket->preferred_slot }}" data-date="{{ $ticket->preferred_date }}"
-                                                data-status="{{ $ticket->status }}" data-reference="{{ $ticket->reference_id }}"
-                                                onclick="openDetailModal(this); return false;">View</a>
-                                            <span class="slot-time">
-                                                {{ $ticket->preferred_slot }}
+                                        <div class="d-inline-flex align-items-center gap-2" style="white-space: nowrap;">
+                                            <span class="dql-slot-badge">
+                                                <i class="fa-regular fa-clock me-1 opacity-75"></i>{{ $ticket->preferred_slot }}
                                             </span>
                                         </div>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>{{ \Carbon\Carbon::parse($ticket->created_at)->format('d M') }}</td>
                                 <td>
-                                    <div class="dql-action-btns">
-                                        <button class="btn-edit-status"
-                                            onclick="event.stopPropagation(); openStatusEdit({{ $ticket->id }}, '{{ $ticket->status }}')">
-                                            <i class="fa-solid fa-pen"></i> Edit
+                                    <span style="white-space: nowrap; font-size: 0.82rem; color: #475569;">
+                                        <i class="fa-regular fa-calendar-alt me-1 text-muted opacity-50"></i>{{ \Carbon\Carbon::parse($ticket->created_at)->format('d M') }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="dql-action-btns justify-content-end">
+                                        @php
+                                            $stageMap = [
+                                                'New' => 'Opened',
+                                                'Opened' => 'Pending',
+                                                'Pending' => 'In Review',
+                                                'In Review' => 'Resolved',
+                                            ];
+                                            $techNext = $stageMap[$ticket->status] ?? null;
+                                        @endphp
+                                        @if($techNext)
+                                            <button type="button" class="btn-next-stage {{ $techNext === 'Resolved' ? 'btn-resolve' : '' }}"
+                                                onclick="event.stopPropagation(); quickNextStage(this, {{ $ticket->id }}, '{{ $techNext }}')"
+                                                title="Advance to {{ $techNext }}">
+                                                @if($techNext === 'Resolved')
+                                                    <i class="fa-solid fa-check"></i> Resolve
+                                                @else
+                                                    <i class="fa-solid fa-arrow-right"></i> Next: {{ $techNext }}
+                                                @endif
+                                            </button>
+                                        @endif
+                                        <button type="button" class="dql-icon-btn"
+                                            onclick="event.stopPropagation(); openStatusEdit({{ $ticket->id }}, '{{ $ticket->status }}')"
+                                            title="Change Stage">
+                                            <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <button class="btn-schedule"
-                                            onclick="event.stopPropagation(); scheduleDoubt({{ $ticket->id }})">
-                                            <i class="fa-regular fa-clock"></i> Schedule
+                                        <button type="button" class="dql-icon-btn schedule"
+                                            onclick="event.stopPropagation(); scheduleDoubt({{ $ticket->id }})"
+                                            title="Schedule Doubt Session">
+                                            <i class="fa-regular fa-clock"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -166,6 +192,7 @@
                             <th>CATEGORY</th>
                             <th>DESCRIPTION</th>
                             <th>ATTACHMENT</th>
+                            <th class="text-end">ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="dqlTableBodyNonTech">
@@ -192,14 +219,18 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $ticket->user->phonenumber ?? '+91 — — — — — —' }}</td>
+                                <td>
+                                    <span style="white-space: nowrap; font-size: 0.82rem; color: #475569;">
+                                        <i class="fa-solid fa-phone me-1 text-muted opacity-40"></i>{{ $ticket->user->phonenumber ?? '+91 — — — — — —' }}
+                                    </span>
+                                </td>
                                 <td>
                                     <span class="dql-cat-badge">{{ $ticket->category ?? 'General' }}</span>
                                 </td>
-                                <td>
-                                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                                        <span>{{ \Illuminate\Support\Str::limit($ticket->description ?? '', 45) }}</span>
-                                        <a href="#" class="view-link"
+                                <td style="max-width: 220px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-truncate" style="font-size: 0.85rem; max-width: 170px;" title="{{ $ticket->description }}">{{ $ticket->description ?? '—' }}</span>
+                                        <a href="#" class="view-link flex-shrink-0"
                                             onclick="viewDetails({{ $ticket->id }}); return false;">Read</a>
                                     </div>
                                 </td>
@@ -208,16 +239,51 @@
                                         <a href="{{ url('uploads/support_attachments/' . $ticket->attachment) }}" target="_blank"
                                             class="btn-view-att">
                                             <i class="fa-solid fa-paperclip"></i>
-                                            {{ \Illuminate\Support\Str::limit($ticket->attachment, 15) }}
+                                            {{ \Illuminate\Support\Str::limit($ticket->attachment, 14) }}
                                         </a>
                                     @else
                                         <span class="text-muted" style="font-size:0.8rem;">—</span>
                                     @endif
                                 </td>
+                                <td class="text-end">
+                                    <div class="dql-action-btns justify-content-end">
+                                        @php
+                                            $stageMap = [
+                                                'New' => 'Opened',
+                                                'Opened' => 'Pending',
+                                                'Pending' => 'In Review',
+                                                'In Review' => 'Resolved',
+                                            ];
+                                            $nonTechNext = $stageMap[$ticket->status] ?? null;
+                                        @endphp
+
+                                        @if($nonTechNext)
+                                            <button type="button" class="btn-next-stage {{ $nonTechNext === 'Resolved' ? 'btn-resolve' : '' }}"
+                                                onclick="event.stopPropagation(); quickNextStage(this, {{ $ticket->id }}, '{{ $nonTechNext }}')"
+                                                title="Change to next stage: {{ $nonTechNext }}">
+                                                @if($nonTechNext === 'Resolved')
+                                                    <i class="fa-solid fa-check"></i> Resolve
+                                                @else
+                                                    <i class="fa-solid fa-arrow-right"></i> Next: {{ $nonTechNext }}
+                                                @endif
+                                            </button>
+                                        @else
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-check-double me-1"></i> Resolved
+                                            </span>
+                                        @endif
+
+                                        <button type="button" class="dql-icon-btn"
+                                            onclick="event.stopPropagation(); openStatusEdit({{ $ticket->id }}, '{{ $ticket->status }}')"
+                                            title="Change Stage">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr class="emptyRow">
-                                <td colspan="5">
+                                <td colspan="6">
                                     <div class="dql-empty">
                                         <i class="fa-solid fa-inbox"></i>
                                         <p>No non-technical queries found for this filter.</p>
@@ -366,6 +432,11 @@
                 <input type="hidden" name="ticket_id" id="editStatusTicketId">
                 <label>SELECT STATUS</label>
                 <div id="statusOptionsContainer">
+                    <div class="dql-status-option" data-value="New" onclick="selectStatus(this)">
+                        <span class="status-dot dot-new"></span>
+                        <span class="status-label">New</span>
+                        <span class="status-desc">Freshly received query</span>
+                    </div>
                     <div class="dql-status-option" data-value="Opened" onclick="selectStatus(this)">
                         <span class="status-dot dot-opened"></span>
                         <span class="status-label">Opened</span>
@@ -660,6 +731,41 @@
                         alert(res.message || 'Failed to update status');
                     }
                 }).catch(() => alert('Network error'));
+            }
+
+            function quickNextStage(btn, ticketId, nextStatus) {
+                if (!confirm(`Are you sure you want to change stage to "${nextStatus}"?`)) {
+                    return;
+                }
+                const origHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+
+                const data = new FormData();
+                data.append('ticket_id', ticketId);
+                data.append('status', nextStatus);
+
+                fetch('{{ route('doubt-query-leads.update-status') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: data
+                }).then(r => r.json()).then(res => {
+                    if (res.status) {
+                        location.reload();
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = origHtml;
+                        alert(res.message || 'Failed to update status');
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                    alert('Network error while updating status');
+                });
             }
 
             // Init render

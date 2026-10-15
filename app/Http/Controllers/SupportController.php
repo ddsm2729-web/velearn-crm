@@ -308,7 +308,7 @@ class SupportController extends Controller
         try {
             $request->validate([
                 'ticket_id' => 'required|exists:support_tickets,id',
-                'status' => 'required|in:Opened,Pending,In Review,Resolved',
+                'status' => 'required|in:New,Opened,Pending,In Review,Resolved',
             ]);
 
             $ticket = SupportTicket::findOrFail($request->ticket_id);
@@ -602,6 +602,15 @@ class SupportController extends Controller
             }
         }
 
+        $now = now();
+        $totalCount = (clone $query)->count();
+        $overdueCount = (clone $query)->whereHas('latestActivity', function($q) use ($now) {
+            $q->where('next_followup_date', '<', $now);
+        })->count();
+        $upcomingCount = (clone $query)->whereHas('latestActivity', function($q) use ($now) {
+            $q->where('next_followup_date', '>=', $now);
+        })->count();
+
         // Sort by next_followup_date
         $query->addSelect([
             'next_followup' => \App\Models\LeadActivity::select('next_followup_date')
@@ -610,18 +619,19 @@ class SupportController extends Controller
                 ->limit(1)
         ])->orderBy('next_followup', 'asc');
 
-        $calls = $query->paginate(15);
+        $calls = $query->paginate(15)->withQueryString();
 
-        $now = now();
         foreach ($calls as $call) {
             $call->is_pending = $call->next_followup < $now;
         }
 
         if ($request->ajax()) {
-            return view('doubt-query-leads.partials.followup_rows', compact('calls'))->render();
+            return view('doubt-query-leads.partials.followup_rows', compact('calls', 'totalCount', 'overdueCount', 'upcomingCount'))->render();
         }
 
-        return view('doubt-query-leads.followups', compact('calls'));
+        $tags = \App\Models\LeadTag::all();
+
+        return view('doubt-query-leads.followups', compact('calls', 'totalCount', 'overdueCount', 'upcomingCount', 'tags'));
     }
 
     // view call log profile

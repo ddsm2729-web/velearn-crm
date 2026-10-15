@@ -103,17 +103,18 @@
             <input type="text" class="form-control border-start-0 ps-0" id="searchInput" name="search" value="{{ request('search') }}" placeholder="Search leads, names...">
         </div>
         
-        <select class="form-select" style="max-width: 200px;" name="ao_id" id="aoSelect">
+        <select class="form-select" style="max-width: 220px;" name="ao_id" id="aoSelect">
             <option value="">All Admission Officers</option>
             @foreach($admissionOfficers as $ao)
                 <option value="{{ $ao->id }}" {{ request('ao_id') == $ao->id ? 'selected' : '' }}>{{ $ao->first_name }} {{ $ao->last_name }}</option>
             @endforeach
         </select>
         
-        <select class="form-select" style="max-width: 150px;" name="status" id="statusSelect">
-            <option value="">All Status</option>
-            <option value="Converted" {{ request('status') == 'Converted' ? 'selected' : '' }}>Converted</option>
-            <option value="Registered" {{ request('status') == 'Registered' ? 'selected' : '' }}>Registered</option>
+        <select class="form-select" style="max-width: 180px;" name="status" id="statusSelect">
+            <option value="">All Status / Tags</option>
+            <option value="Confirmed" {{ strtolower(request('status')) == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+            <option value="Converted" {{ strtolower(request('status')) == 'converted' ? 'selected' : '' }}>Converted</option>
+            <option value="Registered" {{ strtolower(request('status')) == 'registered' ? 'selected' : '' }}>Registered</option>
         </select>
     </form>
 
@@ -121,41 +122,113 @@
     <div class="student-list" id="studentListContainer">
         @forelse($convertedLeads as $lead)
             @php 
-                $initial = strtoupper(substr($lead->name, 0, 1));
-                $isRegistered = strtolower(optional($lead->status)->name) === 'registered';
-                $statusColor = $isRegistered ? '#10b981' : '#f59e0b';
-                $statusText = $isRegistered ? 'Registered' : 'Pending';
-                $statusIcon = $isRegistered ? 'fa-check-circle' : 'fa-hourglass-half';
+                $words = array_filter(explode(' ', trim($lead->name ?? '')));
+                $initial = '';
+                if (count($words) >= 2) {
+                    $initial = strtoupper(mb_substr($words[0], 0, 1) . mb_substr(end($words), 0, 1));
+                } else {
+                    $initial = strtoupper(mb_substr($lead->name ?? 'S', 0, 1));
+                }
+
+                $tagNames = $lead->tags->pluck('name')->map(fn($n) => strtolower($n))->all();
+                $statusNameLower = strtolower($lead->status->name ?? '');
+
+                $isRegistered = in_array('registered', $tagNames) || in_array('register', $tagNames) || $statusNameLower === 'registered' || $statusNameLower === 'payment done' || !empty($lead->admission);
+                $isConverted = in_array('converted', $tagNames) || in_array('demo converted', $tagNames) || $statusNameLower === 'converted';
+                $isConfirmed = in_array('confirmed', $tagNames) || $statusNameLower === 'confirmed';
+
+                // Determine display badge and pipeline values
+                if ($isRegistered) {
+                    $badgeText = 'REGISTERED';
+                    $badgeBg = '#8b5cf6';
+                    $badgeColor = '#ffffff';
+                    $stageText = 'Converted';
+                    $stageIcon = 'fa-check-square';
+                    $stageClass = 'text-success';
+                    $statusText = 'Fully Registered';
+                    $statusColor = '#10b981';
+                    $statusIcon = 'fa-check-circle';
+                } elseif ($isConfirmed && !$isConverted) {
+                    $badgeText = 'CONFIRMED';
+                    $badgeBg = '#3b82f6';
+                    $badgeColor = '#ffffff';
+                    $stageText = 'Confirmed';
+                    $stageIcon = 'fa-check-circle';
+                    $stageClass = 'text-primary';
+                    $statusText = 'Pending Admission';
+                    $statusColor = '#f59e0b';
+                    $statusIcon = 'fa-hourglass-half';
+                } else {
+                    $badgeText = 'CONVERTED';
+                    $badgeBg = '#10b981';
+                    $badgeColor = '#ffffff';
+                    $stageText = 'Converted';
+                    $stageIcon = 'fa-check-square';
+                    $stageClass = 'text-success';
+                    $statusText = 'Pending Admission';
+                    $statusColor = '#f59e0b';
+                    $statusIcon = 'fa-hourglass-half';
+                }
             @endphp
             <a href="{{ route('leads.show', encrypt($lead->id)) }}" class="text-decoration-none">
                 <div class="student-card">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="student-avatar">{{ $initial }}</div>
+                        <div class="student-avatar" style="@if($isRegistered) background: #f5f3ff; color: #7c3aed; @elseif($isConfirmed && !$isConverted) background: #eff6ff; color: #2563eb; @else background: #ecfdf5; color: #059669; @endif">
+                            {{ $initial }}
+                        </div>
                         <div>
-                            <div class="fw-bold text-dark fs-6">{{ $lead->name }}</div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-bold text-dark fs-6">{{ $lead->name }}</span>
+                                
+                                {{-- Display Lead Tags --}}
+                                @if($lead->tags && $lead->tags->isNotEmpty())
+                                    @foreach($lead->tags as $tag)
+                                        @php $tLower = strtolower($tag->name); @endphp
+                                        @if($tLower === 'confirmed')
+                                            <span class="badge rounded-pill px-2 py-0.5" style="font-size: 0.68rem; font-weight: 700; background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                                <i class="fas fa-tag me-1" style="font-size: 0.6rem;"></i>Confirmed
+                                            </span>
+                                        @elseif($tLower === 'converted' || $tLower === 'demo converted')
+                                            <span class="badge rounded-pill px-2 py-0.5" style="font-size: 0.68rem; font-weight: 700; background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                                <i class="fas fa-tag me-1" style="font-size: 0.6rem;"></i>Converted
+                                            </span>
+                                        @elseif(str_contains($tLower, 'register'))
+                                            <span class="badge rounded-pill px-2 py-0.5" style="font-size: 0.68rem; font-weight: 700; background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">
+                                                <i class="fas fa-tag me-1" style="font-size: 0.6rem;"></i>Registered
+                                            </span>
+                                        @else
+                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                                {{ ucfirst($tag->name) }}
+                                            </span>
+                                        @endif
+                                    @endforeach
+                                @endif
+                            </div>
                             <div class="text-muted small">
                                 {{ $lead->phone }} 
-                                @if($lead->courses->count() > 0)
+                                @if($lead->courses && $lead->courses->count() > 0)
                                     &middot; {{ $lead->courses->first()->title }}
+                                @elseif($lead->admission && $lead->admission->course)
+                                    &middot; {{ $lead->admission->course->title }}
                                 @endif
                             </div>
                         </div>
                     </div>
                     
-                    <div class="d-flex align-items-center gap-5">
+                    <div class="d-flex align-items-center gap-4 gap-md-5">
                         <div class="pipeline-status">
-                            <span class="text-success"><i class="fas fa-check-square me-1"></i>Converted</span>
+                            <span class="{{ $stageClass }}"><i class="fas {{ $stageIcon }} me-1"></i>{{ $stageText }}</span>
                             <span class="text-muted"><i class="fas fa-arrow-right mx-1"></i></span>
                             <span style="color: {{ $statusColor }};"><i class="fas {{ $statusIcon }} me-1"></i>{{ $statusText }}</span>
                         </div>
                         
                         <div class="text-end">
-                            <span class="badge px-2 py-1 mb-1" style="background-color: {{ $isRegistered ? '#10b981' : '#10b981' }}; font-weight: 600;">
-                                {{ strtoupper($lead->status->name ?? 'Converted') }}
+                            <span class="badge px-2.5 py-1 mb-1 rounded-pill" style="background-color: {{ $badgeBg }}; color: {{ $badgeColor }}; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px;">
+                                {{ $badgeText }}
                             </span>
                             <div class="text-muted" style="font-size: 0.7rem;">
                                 AO: {{ $lead->assignee ? $lead->assignee->first_name : 'Unassigned' }}<br>
-                                {{ $lead->converted_date ? $lead->converted_date->format('d M Y') : '' }}
+                                {{ $lead->converted_date ? $lead->converted_date->format('d M Y') : $lead->updated_at->format('d M Y') }}
                             </div>
                         </div>
                     </div>

@@ -14,7 +14,7 @@
                 </h1>
                 <div class="d-flex gap-2">
                     @can('Course List')
-                        <a href="{{ route('courses.index') }}" class="btn btn-outline-secondary">← Back</a>
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back</a>
                     @endcan
                 </div>
             </div>

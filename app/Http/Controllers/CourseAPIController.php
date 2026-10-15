@@ -6,6 +6,7 @@ use App\Models\Admission;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Batch;
+use App\Models\BatchAttendance;
 use App\Models\BatchSchedule;
 use App\Models\BatchTopicLog;
 use App\Models\CallLog;
@@ -1963,6 +1964,42 @@ class CourseAPIController extends Controller
                 }
             }
 
+            // 5. 1:1 Student Evaluation Meetings (scheduled by Technical Staff)
+            $staffEvaluationMeetings = \App\Models\StaffMeeting::with(['staff', 'admission.course'])
+                ->where('meeting_type', 'Student Evaluation')
+                ->where(function ($q) use ($id, $admissions, $user, $last10) {
+                    $q->where('student_id', $id);
+                    if ($admissions->isNotEmpty()) {
+                        $q->orWhereIn('admission_id', $admissions);
+                    }
+                    if ($user && $user->email) {
+                        $q->orWhereHas('admission.contact', fn($cq) => $cq->where('email', $user->email));
+                    }
+                    if ($user && $user->phonenumber) {
+                        $q->orWhereHas('admission.contact', fn($cq) => $cq->where('caller_number', $user->phonenumber));
+                    }
+                    if ($last10) {
+                        $q->orWhereHas('admission.contact', fn($cq) => $cq->where('caller_number', 'like', "%{$last10}%"));
+                    }
+                })
+                ->get();
+
+            foreach ($staffEvaluationMeetings as $evalM) {
+                $meetings[] = [
+                    'id' => 'eval_'.$evalM->id,
+                    'type' => 'Evaluation Class',
+                    'title' => $evalM->title ?: '1:1 Evaluation Session',
+                    'date' => clone Carbon::parse($evalM->date),
+                    'date_raw' => Carbon::parse($evalM->date)->format('Y-m-d'),
+                    'date_formatted' => Carbon::parse($evalM->date)->format('M d, Y'),
+                    'time' => $evalM->time ? Carbon::parse($evalM->time)->format('h:i A') : 'TBA',
+                    'instructor' => $evalM->staff ? $evalM->staff->name : 'Technical Staff',
+                    'course' => $evalM->admission && $evalM->admission->course ? $evalM->admission->course->title : 'Evaluation Session',
+                    'link' => $evalM->meet_link ?: $evalM->zoom_meet_link,
+                    'status' => $evalM->status ?: 'upcoming',
+                ];
+            }
+
             // Sort by date descending
             usort($meetings, function ($a, $b) {
                 return $b['date'] <=> $a['date'];
@@ -2139,18 +2176,10 @@ class CourseAPIController extends Controller
                 }
             }
 
-            // 6. Attendance (Generated dynamically as empty, since no model exists yet)
-            $attendanceData = [];
-            $daysInMonth = Carbon::now()->daysInMonth;
-            for ($i = 1; $i <= $daysInMonth; $i++) {
-                $attendanceData[] = ['day' => $i, 'status' => 'none'];
-            }
-            $attendanceSummary = [
-                'present' => 0,
-                'absent' => 0,
-                'no_class' => $daysInMonth,
-                'percentage' => 0,
-            ];
+            // 6. Dynamic Monthly Attendance (supports optional month & year, blocks future months)
+            $attMonth = $request->input('month');
+            $attYear = $request->input('year');
+            $monthlyAttendance = $this->getStudentMonthlyAttendance($user, $enrollment, $attYear, $attMonth);
 
             return response()->json([
                 'status' => true,
@@ -2172,13 +2201,172 @@ class CourseAPIController extends Controller
                     ],
                     'mini_projects' => $miniProjects,
                     'main_projects' => $mainProjects,
-                    'attendance' => $attendanceData,
-                    'attendance_summary' => $attendanceSummary,
+                    'attendance' => $monthlyAttendance['attendance'],
+                    'attendance_summary' => $monthlyAttendance['attendance_summary'],
                 ],
             ]);
 
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * API to fetch student attendance calendar for any specific month and year.
+     * GET /api/student/{id}/attendance-calendar?month=10&year=2026
+     * Prevents viewing future months.
+     */
+    public function studentAttendanceCalendar(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = User::find($id);
+            if (! $user) {
+                return response()->json(['status' => false, 'message' => 'User not found'], 404);
+            }
+
+            $enrollment = CourseUser::with(['batch', 'course'])
+                ->where('auth_id', $id)
+                ->whereHas('course', function ($q) {
+                    $q->where('course_type', 'live');
+                })
+                ->where('status', 'active')
+                ->first();
+
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            $data = $this->getStudentMonthlyAttendance($user, $enrollment, $year, $month);
+
+            return response()->json([
+                'status' => true,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Compute dynamic monthly attendance for a student.
+     * Prevents future months: clamps to current month and year.
+     */
+    private function getStudentMonthlyAttendance($user, $enrollment, $year = null, $month = null): array
+    {
+        $now = Carbon::now();
+        $year = (int) ($year ?: $now->year);
+        $month = (int) ($month ?: $now->month);
+
+        // Disallow future months: clamp to current year and month
+        if ($year > $now->year || ($year === $now->year && $month > $now->month)) {
+            $year = $now->year;
+            $month = $now->month;
+        }
+
+        $targetDate = Carbon::createFromDate($year, $month, 1);
+        $daysInMonth = $targetDate->daysInMonth;
+        $isCurrentMonth = ($year === $now->year && $month === $now->month);
+        $currentDay = $isCurrentMonth ? $now->day : $daysInMonth;
+
+        // Query BatchAttendance records for this student in the requested month & year
+        $studentAttendances = BatchAttendance::where(function ($q) use ($user) {
+                $q->where('student_id', $user->id)
+                  ->orWhere('student_email', strtolower($user->email));
+            })
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->get()
+            ->keyBy(function ($item) {
+                return Carbon::parse($item->date)->day;
+            });
+
+        // Collect class days for the student's batch
+        $batchClassDays = collect();
+        if ($enrollment && $enrollment->batch_id) {
+            $scheduleDays = BatchSchedule::where('batch_id', $enrollment->batch_id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->day);
+
+            $topicDays = BatchTopicLog::where('batch_id', $enrollment->batch_id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->day);
+
+            $batchAttendanceDays = BatchAttendance::where('batch_id', $enrollment->batch_id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->day);
+
+            $batchClassDays = $scheduleDays->concat($topicDays)->concat($batchAttendanceDays)->unique();
+        }
+
+        $attendanceData = [];
+        $presentCount = 0;
+        $absentCount = 0;
+        $noClassCount = 0;
+
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $dateObj = Carbon::createFromDate($year, $month, $d);
+            $status = 'none';
+
+            // Only past days or today can be marked as present/absent
+            if (!$isCurrentMonth || $d <= $currentDay) {
+                if ($studentAttendances->has($d)) {
+                    $att = $studentAttendances->get($d);
+                    $attStatus = strtolower(trim($att->status ?? ''));
+                    if (in_array($attStatus, ['present', 'half day']) || (float) $att->attendance_percentage >= 45) {
+                        $status = 'present';
+                        $presentCount++;
+                    } else {
+                        $status = 'absent';
+                        $absentCount++;
+                    }
+                } elseif ($batchClassDays->contains($d)) {
+                    // Class was held for the batch on this date, but student had no attendance recorded
+                    $status = 'absent';
+                    $absentCount++;
+                } else {
+                    $status = 'none';
+                    $noClassCount++;
+                }
+            } else {
+                // Future days in current month
+                $status = 'none';
+                $noClassCount++;
+            }
+
+            $attendanceData[] = [
+                'day' => $d,
+                'date' => $dateObj->toDateString(),
+                'status' => $status,
+            ];
+        }
+
+        $totalClassesHeld = $presentCount + $absentCount;
+        $attendancePercentage = $totalClassesHeld > 0
+            ? round(($presentCount / $totalClassesHeld) * 100)
+            : 0;
+
+        $attendanceSummary = [
+            'present' => $presentCount,
+            'absent' => $absentCount,
+            'no_class' => $noClassCount,
+            'total_classes' => $totalClassesHeld,
+            'percentage' => $attendancePercentage,
+            'month' => $month,
+            'month_name' => $targetDate->format('F'),
+            'year' => $year,
+            'days_in_month' => $daysInMonth,
+            'first_day_of_week' => $targetDate->dayOfWeekIso, // 1 (Mon) - 7 (Sun)
+            'is_current_month' => $isCurrentMonth,
+        ];
+
+        return [
+            'attendance' => $attendanceData,
+            'attendance_summary' => $attendanceSummary,
+        ];
     }
 }

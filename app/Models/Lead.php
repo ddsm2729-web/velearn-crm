@@ -49,4 +49,9 @@ class Lead extends Model
     {
         return $this->belongsToMany(Course::class)->withTimestamps();
     }
+
+    public function admission()
+    {
+        return $this->hasOne(Admission::class, 'lead_id');
+    }
 }

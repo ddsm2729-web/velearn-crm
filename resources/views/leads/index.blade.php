@@ -180,12 +180,18 @@
         
         <!-- Status Filter Tabs -->
         <div class="filter-tabs">
-            <a href="{{ route('leads.index') }}" class="filter-tab {{ !request('status') ? 'active' : '' }}">All</a>
+            <a href="{{ route('leads.index') }}" class="filter-tab {{ (!request('status') && !request('tab')) ? 'active' : '' }}">All</a>
             @foreach($statuses as $sts)
-                <a href="{{ route('leads.index', ['status' => $sts->id]) }}" class="filter-tab {{ request('status') == $sts->id ? 'active' : '' }}">
+                <a href="{{ route('leads.index', ['status' => $sts->id]) }}" class="filter-tab {{ request('status') == $sts->id && !request('tab') ? 'active' : '' }}">
                     {{ $sts->name }}
                 </a>
             @endforeach
+            <a href="{{ route('leads.index', ['tab' => 'payment_link']) }}" class="filter-tab {{ request('tab') == 'payment_link' || request('status') == 'payment_link' ? 'active' : '' }}">
+                Payment Link Sent / Generated
+            </a>
+            <a href="{{ route('leads.index', ['tab' => 'payment_done']) }}" class="filter-tab {{ request('tab') == 'payment_done' || request('status') == 'payment_done' ? 'active' : '' }}">
+                Payment Done
+            </a>
         </div>
 
         <!-- Search & Filter Card -->
@@ -193,6 +199,9 @@
             <form method="GET" action="{{ route('leads.index') }}" class="row g-3 align-items-end" id="filterForm">
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                @if(request('tab'))
+                    <input type="hidden" name="tab" value="{{ request('tab') }}">
                 @endif
                 <div class="col-12 col-md-3">
                     <label class="filter-field-label">Search Lead</label>
@@ -320,6 +329,7 @@
                                             @else
                                                 <span class="text-muted small">-</span>
                                             @endif
+
                                             <div class="text-muted mt-1" style="font-size: 0.75rem;">
                                                 <i class="fas fa-user-tie me-1"></i> {{ $lead->assignee ? trim($lead->assignee->first_name . ' ' . $lead->assignee->last_name) : 'Unassigned' }}
                                             </div>

@@ -59,6 +59,11 @@ class User extends Authenticatable
         return $this->hasMany(CourseUser::class, 'auth_id');
     }
 
+    public function placementProfile()
+    {
+        return $this->hasOne(PlacementProfile::class, 'user_id');
+    }
+
     public function courseVideoProgresses()
     {
         return $this->hasMany(CourseVideoProgress::class, 'auth_id');

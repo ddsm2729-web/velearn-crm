@@ -7,7 +7,7 @@
     <div class="container-fluid p-0">
         <div class="align-items-center d-flex justify-content-between">
             <h1 class="h3"><strong>Manage</strong> Permissions</h1>
-            <a href="{{ Route::has('roles.index') ? route('roles.index') : url()->previous() }}" class="btn btn-theme">Back</a>
+            <a href="javascript:history.back()" class="btn btn-theme"><i class="fas fa-arrow-left me-2"></i> Back</a>
         </div>
 
         <div class="row">

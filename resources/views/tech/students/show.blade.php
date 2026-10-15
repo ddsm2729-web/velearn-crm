@@ -263,7 +263,7 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="mb-4">
-        <a href="{{ route('tech.students.index') }}" class="text-decoration-none text-muted fw-bold" style="font-size: 0.9rem;">
+        <a href="javascript:history.back()" class="text-decoration-none text-muted fw-bold" style="font-size: 0.9rem;">
             <i class="fas fa-arrow-left me-2"></i> Back to Students
         </a>
     </div>
@@ -278,7 +278,11 @@
         $joined = $admission->created_at ? $admission->created_at->format('d M Y') : 'N/A';
         
         $status = strtolower($admission->status);
-        $feeStatus = ($status == 'pending_fee') ? 'Pending' : 'Paid';
+        $feeStatus = $feeDetails['fee_status'] ?? (($status == 'pending_fee') ? 'Pending' : 'Paid');
+        $courseFees = $feeDetails['course_fees'] ?? (float) ($admission->course_fees ?? 0);
+        $paidAmount = $feeDetails['paid_amount'] ?? 0;
+        $dueAmount = $feeDetails['due_amount'] ?? 0;
+        $paymentsList = $feeDetails['payments'] ?? collect();
     @endphp
 
     <div class="row">
@@ -311,18 +315,33 @@
                         <div class="info-label"><i class="far fa-calendar-alt"></i> Joined</div>
                         <div class="info-value">{{ $joined }}</div>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row" style="cursor: pointer; transition: background 0.15s;" onclick="switchStudentTab('fees')" title="Click to view fee breakdown and receipts">
                         <div class="info-label"><i class="fas fa-wallet"></i> Fee</div>
-                        <div class="info-value">{{ $feeStatus }}</div>
+                        <div class="info-value d-flex align-items-center justify-content-end gap-1">
+                            @if($feeStatus == 'Paid')
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.75rem;">
+                                    <i class="fas fa-check-circle me-1"></i> Paid
+                                </span>
+                            @elseif($feeStatus == 'Partial')
+                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1" style="font-size: 0.75rem;">
+                                    <i class="fas fa-clock me-1"></i> Partial
+                                </span>
+                            @else
+                                <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1" style="font-size: 0.75rem;">
+                                    <i class="fas fa-exclamation-circle me-1"></i> Pending
+                                </span>
+                            @endif
+                            <i class="fas fa-arrow-right small opacity-50 ms-1" style="font-size: 0.7rem;"></i>
+                        </div>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row" style="cursor: pointer; transition: background 0.15s;" onclick="switchStudentTab('attendance')" title="Click to view detailed attendance history">
                         <div class="info-label"><i class="fas fa-chart-line"></i> Attendance</div>
-                        <div class="info-value" style="color: #10b981;">{{ $attendance }}%</div>
+                        <div class="info-value d-flex align-items-center justify-content-end gap-1" style="color: {{ $attendance >= 70 ? '#10b981' : ($attendance >= 50 ? '#f59e0b' : ($attendance > 0 ? '#ef4444' : '#64748b')) }};">
+                            <span>{{ $attendance }}%</span>
+                            <i class="fas fa-arrow-right small opacity-50 ms-1" style="font-size: 0.7rem;"></i>
+                        </div>
                     </div>
                 </div>
-                
-                <button class="btn btn-assign shadow-sm"><i class="fas fa-exclamation-triangle me-1"></i> Assign Lead to Staff</button>
-                <div class="text-center text-muted small mb-3 px-3" style="font-size: 0.7rem;">Assign to Telecaller or Support Executive</div>
             </div>
         </div>
         
@@ -343,6 +362,9 @@
                         <button class="nav-link" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button" role="tab">Attendance</button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees" type="button" role="tab">Fees & Invoices</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">Assignments</button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -358,18 +380,24 @@
                     <!-- OVERVIEW TAB -->
                     <div class="tab-pane fade show active" id="overview" role="tabpanel">
                         <!-- Top Summary Boxes -->
-                        <div class="d-flex gap-3 mb-4">
+                        <div class="d-flex gap-3 mb-4 flex-wrap">
                             <div class="summary-box">
                                 <h6>Course</h6>
                                 <div class="val" style="color: #6366f1;">{{ $progress }}%</div>
                             </div>
-                            <div class="summary-box">
+                            <div class="summary-box" style="cursor: pointer; transition: all 0.2s;" onclick="switchStudentTab('attendance')" title="Click to view detailed attendance breakdown">
                                 <h6>Attendance</h6>
-                                <div class="val" style="color: #10b981;">{{ $attendance }}%</div>
+                                <div class="val" style="color: {{ $attendance >= 70 ? '#10b981' : ($attendance >= 50 ? '#f59e0b' : ($attendance > 0 ? '#ef4444' : '#64748b')) }};">{{ $attendance }}%</div>
+                                <div class="small mt-1 text-primary fw-semibold" style="font-size: 0.72rem;">View Breakdown <i class="fas fa-chevron-right ms-1"></i></div>
                             </div>
                             <div class="summary-box">
                                 <h6>Modules</h6>
                                 <div class="val" style="color: #0ea5e9;">{{ $modulesDone }}/{{ $modulesTotal }}</div>
+                            </div>
+                            <div class="summary-box" style="cursor: pointer; transition: all 0.2s;" onclick="switchStudentTab('fees')" title="Click to view fees and invoice breakdown">
+                                <h6>Fee Status</h6>
+                                <div class="val" style="color: {{ $feeStatus == 'Paid' ? '#10b981' : ($feeStatus == 'Partial' ? '#f59e0b' : '#ef4444') }};">{{ $feeStatus }}</div>
+                                <div class="small mt-1 text-primary fw-semibold" style="font-size: 0.72rem;">₹{{ number_format($paidAmount) }} Paid <i class="fas fa-chevron-right ms-1"></i></div>
                             </div>
                         </div>
 
@@ -395,10 +423,302 @@
                         </div>
                     </div>
                     
-                    <!-- OTHER TABS -->
+                    <!-- ATTENDANCE TAB -->
                     <div class="tab-pane fade" id="attendance" role="tabpanel">
-                        <p class="text-muted text-center py-5">Attendance details will be displayed here.</p>
+                        <div class="d-flex align-items-center justify-content-between mb-3 mt-3 flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-calendar-check text-success me-2 fs-5"></i> 
+                                <h6 class="mb-0 fw-bold" style="color: #1e293b;">
+                                    Batch Attendance History
+                                    <span class="text-muted fw-normal small ms-2">({{ $batchCode }} • {{ $courseTitle }})</span>
+                                </h6>
+                            </div>
+                            <span class="badge rounded-pill bg-light text-dark border px-3 py-1">
+                                Overall Attendance: <strong style="color: {{ $attendance >= 70 ? '#10b981' : ($attendance >= 50 ? '#f59e0b' : ($attendance > 0 ? '#ef4444' : '#64748b')) }}">{{ $attendance }}%</strong>
+                            </span>
+                        </div>
+
+                        <!-- Metric cards row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-primary"><i class="fas fa-calendar-day"></i></div>
+                                    <div class="val">{{ $attendanceTotalClasses }}</div>
+                                    <div class="lbl">Classes Held</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-success"><i class="fas fa-user-check"></i></div>
+                                    <div class="val">{{ $attendancePresentCount }}</div>
+                                    <div class="lbl">Full Present</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-warning"><i class="fas fa-adjust"></i></div>
+                                    <div class="val">{{ $attendanceHalfDayCount }}</div>
+                                    <div class="lbl">Half Days</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-danger"><i class="fas fa-user-times"></i></div>
+                                    <div class="val">{{ $attendanceLeaveCount }}</div>
+                                    <div class="lbl">Leaves / Missed</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Attendance Breakdown (Calendar Grid) -->
+                        @if(isset($attendanceCalendar) && count($attendanceCalendar['days']) > 0)
+                            <div class="card border rounded-3 p-3 mb-4 bg-white shadow-sm">
+                                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                                    <div class="fw-bold text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                                        <i class="far fa-calendar-alt text-primary me-2"></i> {{ $attendanceCalendar['month_name'] }} Attendance Calendar
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3 small flex-wrap" style="font-size: 0.75rem;">
+                                        <span class="d-flex align-items-center gap-1"><span class="badge bg-success p-1 rounded-circle" style="width: 8px; height: 8px;"></span> Present</span>
+                                        <span class="d-flex align-items-center gap-1"><span class="badge bg-warning p-1 rounded-circle" style="width: 8px; height: 8px;"></span> Half Day</span>
+                                        <span class="d-flex align-items-center gap-1"><span class="badge bg-danger p-1 rounded-circle" style="width: 8px; height: 8px;"></span> Leave/Missed</span>
+                                        <span class="d-flex align-items-center gap-1"><span class="badge bg-light border p-1 rounded-circle" style="width: 8px; height: 8px;"></span> No Session</span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($attendanceCalendar['days'] as $cDay)
+                                        @php
+                                            $dayStatus = $cDay['status'];
+                                            $dayPerc = (float) $cDay['percentage'];
+                                            $bg = '#f8fafc';
+                                            $textColor = '#94a3b8';
+                                            $border = '#e2e8f0';
+                                            $title = $cDay['date'] . ': No Class Scheduled';
+
+                                            if ($dayStatus == 'Present') {
+                                                $bg = '#ecfdf5';
+                                                $textColor = '#059669';
+                                                $border = '#a7f3d0';
+                                                $title = $cDay['date'] . ': Marked Present (' . round($dayPerc) . '%)';
+                                            } elseif ($dayStatus == 'Half Day') {
+                                                $bg = '#fffbeb';
+                                                $textColor = '#d97706';
+                                                $border = '#fde68a';
+                                                $title = $cDay['date'] . ': Half Day (' . round($dayPerc) . '%)';
+                                            } elseif ($dayStatus == 'Leave') {
+                                                $bg = '#fef2f2';
+                                                $textColor = '#dc2626';
+                                                $border = '#fecaca';
+                                                $title = $cDay['date'] . ': Leave / Absent (' . round($dayPerc) . '%)';
+                                            } elseif ($dayStatus == 'Future') {
+                                                $bg = '#ffffff';
+                                                $textColor = '#cbd5e1';
+                                                $border = '#f1f5f9';
+                                                $title = $cDay['date'] . ': Upcoming';
+                                            }
+                                        @endphp
+                                        <div class="text-center rounded-2 p-1" 
+                                            title="{{ $title }}"
+                                            style="flex: 1 0 38px; min-width: 38px; height: 48px; background: {{ $bg }}; border: 1px solid {{ $border }}; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s;">
+                                            <div style="font-size: 0.72rem; font-weight: 700; color: {{ $textColor }};">{{ $cDay['day'] }}</div>
+                                            @if($dayStatus == 'Present')
+                                                <i class="fas fa-check" style="font-size: 0.65rem; color: #059669;"></i>
+                                            @elseif($dayStatus == 'Half Day')
+                                                <i class="fas fa-adjust" style="font-size: 0.65rem; color: #d97706;"></i>
+                                            @elseif($dayStatus == 'Leave')
+                                                <i class="fas fa-times" style="font-size: 0.65rem; color: #dc2626;"></i>
+                                            @else
+                                                <span style="font-size: 0.6rem; color: {{ $textColor }};">•</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Attendance Table -->
+                        @if($attendanceRecords->count() > 0)
+                            <div class="table-responsive border rounded-3 overflow-hidden">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                        <tr>
+                                            <th class="ps-3 py-3">Date</th>
+                                            <th class="py-3">Session / Schedule</th>
+                                            <th class="py-3 text-center">Class Duration</th>
+                                            <th class="py-3 text-center">Attended Time</th>
+                                            <th class="py-3 text-center">Attendance %</th>
+                                            <th class="py-3 text-end pe-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($attendanceRecords as $att)
+                                            @php
+                                                $attPerc = (float) $att->attendance_percentage;
+                                                $statusColor = 'success';
+                                                $statusIcon = 'check-circle';
+                                                if ($att->status == 'Half Day') {
+                                                    $statusColor = 'warning';
+                                                    $statusIcon = 'adjust';
+                                                } elseif ($att->status == 'Leave' || $attPerc < 45) {
+                                                    $statusColor = 'danger';
+                                                    $statusIcon = 'times-circle';
+                                                }
+                                                $schedTime = $att->batchSchedule ? $att->batchSchedule->start_time . ' - ' . $att->batchSchedule->end_time : 'Live Class';
+                                            @endphp
+                                            <tr>
+                                                <td class="ps-3 fw-bold text-dark">
+                                                    <i class="far fa-calendar-alt text-muted me-1"></i>
+                                                    {{ \Carbon\Carbon::parse($att->date)->format('d M Y') }}
+                                                </td>
+                                                <td>
+                                                    <div class="fw-semibold text-dark">{{ $schedTime }}</div>
+                                                    @if($att->remarks)
+                                                        <div class="text-muted small" style="font-size: 0.75rem;">{{ $att->remarks }}</div>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center text-muted">
+                                                    {{ $att->meeting_duration_minutes > 0 ? $att->meeting_duration_minutes . ' mins' : '—' }}
+                                                </td>
+                                                <td class="text-center fw-semibold text-dark">
+                                                    {{ $att->attended_duration_minutes > 0 ? $att->attended_duration_minutes . ' mins' : '0 mins' }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="fw-bold" style="color: {{ $attPerc >= 70 ? '#10b981' : ($attPerc >= 45 ? '#f59e0b' : '#ef4444') }}">
+                                                        {{ round($attPerc) }}%
+                                                    </span>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    <span class="badge bg-{{ $statusColor }} bg-opacity-10 text-{{ $statusColor }} border border-{{ $statusColor }} border-opacity-25 px-2 py-1 rounded-pill">
+                                                        <i class="fas fa-{{ $statusIcon }} me-1"></i> {{ $att->status }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-5 text-muted border rounded-3 bg-light bg-opacity-50">
+                                <i class="fas fa-calendar-times fa-3x mb-3 text-secondary opacity-40"></i>
+                                <h6 class="fw-bold text-dark mb-1">No attendance records logged yet</h6>
+                                <p class="small text-muted mb-0">Live Zoom classes and attendance records for batch {{ $batchCode }} will automatically appear here once sessions conclude.</p>
+                            </div>
+                        @endif
                     </div>
+                    
+                    <!-- FEES & INVOICES TAB -->
+                    <div class="tab-pane fade" id="fees" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-3 mt-3 flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-wallet text-success me-2 fs-5"></i> 
+                                <h6 class="mb-0 fw-bold" style="color: #1e293b;">
+                                    Course Fee & Payment Breakdown
+                                    <span class="text-muted fw-normal small ms-2">({{ $courseTitle }})</span>
+                                </h6>
+                            </div>
+                            <span class="badge rounded-pill bg-{{ $feeStatus == 'Paid' ? 'success' : ($feeStatus == 'Partial' ? 'warning' : 'danger') }} bg-opacity-10 text-{{ $feeStatus == 'Paid' ? 'success' : ($feeStatus == 'Partial' ? 'warning' : 'danger') }} border px-3 py-1 fw-bold">
+                                Status: {{ $feeStatus }}
+                            </span>
+                        </div>
+
+                        <!-- Metric cards row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-primary"><i class="fas fa-receipt"></i></div>
+                                    <div class="val text-primary" style="font-size: 1.25rem;">₹{{ number_format($courseFees) }}</div>
+                                    <div class="lbl">Total Course Fee</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-success"><i class="fas fa-check-circle"></i></div>
+                                    <div class="val text-success" style="font-size: 1.25rem;">₹{{ number_format($paidAmount) }}</div>
+                                    <div class="lbl">Total Paid</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon {{ $dueAmount > 0 ? 'text-danger' : 'text-muted' }}"><i class="fas fa-hourglass-half"></i></div>
+                                    <div class="val {{ $dueAmount > 0 ? 'text-danger' : 'text-muted' }}" style="font-size: 1.25rem;">₹{{ number_format($dueAmount) }}</div>
+                                    <div class="lbl">Due Balance</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="icon text-info"><i class="fas fa-credit-card"></i></div>
+                                    <div class="val text-dark" style="font-size: 1rem; font-weight: 700;">{{ $admission->payment_mode ?? 'Full Payment' }}</div>
+                                    <div class="lbl">Payment Mode</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transactions Table -->
+                        @if($paymentsList->count() > 0)
+                            <div class="table-responsive border rounded-3 overflow-hidden">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                        <tr>
+                                            <th class="ps-3 py-3">Receipt / Payment ID</th>
+                                            <th class="py-3">Payment Date</th>
+                                            <th class="py-3">Payment Method</th>
+                                            <th class="py-3">Transaction Reference</th>
+                                            <th class="py-3 text-center">Amount</th>
+                                            <th class="py-3 text-center">Status</th>
+                                            <th class="py-3 text-end pe-3">Invoice</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($paymentsList as $p)
+                                            @php
+                                                $pStatus = strtolower($p->status);
+                                                $isPaid = in_array($pStatus, ['paid', 'completed', 'success']);
+                                            @endphp
+                                            <tr>
+                                                <td class="ps-3 fw-bold text-dark">
+                                                    <i class="fas fa-file-invoice-dollar text-muted me-1"></i>
+                                                    PAY-{{ str_pad($p->id, 4, '0', STR_PAD_LEFT) }}
+                                                </td>
+                                                <td>
+                                                    <span class="text-dark">{{ \Carbon\Carbon::parse($p->payment_date ?? $p->created_at)->format('d M Y') }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border px-2 py-1">{{ ucfirst($p->payment_method ?? 'Online') }}</span>
+                                                </td>
+                                                <td>
+                                                    <code class="text-muted small" style="font-size: 0.75rem;">{{ $p->razorpay_payment_id ?? $p->razorpay_payment_link_id ?? 'Direct / Manual' }}</code>
+                                                </td>
+                                                <td class="text-center fw-bold text-dark">
+                                                    ₹{{ number_format($p->amount, 2) }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-{{ $isPaid ? 'success' : 'warning' }} bg-opacity-10 text-{{ $isPaid ? 'success' : 'warning' }} border border-{{ $isPaid ? 'success' : 'warning' }} border-opacity-25 px-2 py-1 rounded-pill">
+                                                        <i class="fas fa-{{ $isPaid ? 'check-circle' : 'clock' }} me-1"></i> {{ ucfirst($p->status) }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    @if($isPaid)
+                                                        <a href="{{ route('payments.invoice', $p->id) }}" class="btn btn-sm btn-outline-primary py-1 px-3 rounded-pill fw-semibold shadow-sm" target="_blank" title="Download Tax Invoice / Receipt">
+                                                            <i class="fas fa-download me-1"></i> Invoice
+                                                        </a>
+                                                    @else
+                                                        <span class="text-muted small">—</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-5 text-muted border rounded-3 bg-light bg-opacity-50">
+                                <i class="fas fa-receipt fa-3x mb-3 text-secondary opacity-40"></i>
+                                <h6 class="fw-bold text-dark mb-1">No payment transactions recorded</h6>
+                                <p class="small text-muted mb-0">Payments recorded for this admission will appear here with downloadable invoices.</p>
+                            </div>
+                        @endif
+                    </div>
+
                     <div class="tab-pane fade" id="assignments" role="tabpanel">
                         <div class="d-flex align-items-center mb-3 mt-3">
                             <i class="fas fa-clipboard-list text-primary me-2"></i> <h6 class="mb-0 fw-bold" style="color: #1e293b;">Assignment Submissions</h6>
@@ -595,10 +915,10 @@
                     </div>
                 </div>
                 <div class="col-md">
-                    <div class="metric-card">
+                    <div class="metric-card" style="cursor: pointer; transition: all 0.2s;" onclick="switchStudentTab('attendance')" title="Click to view detailed attendance history">
                         <div class="icon"><i class="fas fa-calendar-alt" style="color: #3b82f6;"></i></div>
                         <h6>Attendance</h6>
-                        <div class="val" style="color: #10b981;">{{ $attendance }}%</div>
+                        <div class="val" style="color: {{ $attendance >= 70 ? '#10b981' : ($attendance >= 50 ? '#f59e0b' : ($attendance > 0 ? '#ef4444' : '#64748b')) }};">{{ $attendance }}%</div>
                     </div>
                 </div>
                 <div class="col-md">
@@ -662,3 +982,25 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function switchStudentTab(tabId) {
+        const triggerEl = document.querySelector('#studentTabs button[data-bs-target="#' + tabId + '"]');
+        if (triggerEl) {
+            const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
+            tab.show();
+            triggerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check URL parameter to switch tab automatically
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+        if (activeTab) {
+            switchStudentTab(activeTab);
+        }
+    });
+</script>
+@endpush

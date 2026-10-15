@@ -2,7 +2,202 @@
 
 @section('pageTitle', 'Technical Head Dashboard')
 
+@push('css')
+<style>
+    .today-activity-card {
+        background: var(--card-bg, #ffffff);
+        border-radius: 12px;
+        border: 1px solid var(--border-color, #e2e8f0);
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+    .today-activity-title {
+        color: var(--text-primary, #1e293b);
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        margin: 0;
+    }
+    .live-notifications-badge {
+        font-size: 0.72rem;
+        color: var(--text-secondary, #64748b);
+        background: #f1f5f9;
+        padding: 5px 12px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .live-pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #10b981;
+        display: inline-block;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+    .today-activity-nav {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .today-tab-btn {
+        background: #f8fafc;
+        color: var(--text-secondary, #64748b);
+        border: 1px solid var(--border-color, #e2e8f0);
+        padding: 7px 18px;
+        border-radius: 24px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+    }
+    .today-tab-btn:hover:not(.active) {
+        background: #f1f5f9;
+        color: var(--text-primary, #1e293b);
+        border-color: #cbd5e1;
+    }
+    .today-tab-btn.active.staff-tab-btn {
+        background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%) !important;
+        color: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+    .today-tab-btn.active.notif-tab-btn {
+        background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%) !important;
+        color: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+    }
 
+    .today-item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 0;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s ease;
+    }
+    .today-item-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .today-item-row:first-child {
+        padding-top: 4px;
+    }
+    .today-item-row:hover {
+        background: #f8fafc;
+    }
+
+    .staff-avatar-round {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .notif-icon-squircle {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .today-item-text-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        line-height: 1.3;
+    }
+    .today-item-text-sub {
+        font-size: 0.82rem;
+        color: var(--text-secondary, #64748b);
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+    .today-item-text-sub strong {
+        color: #0f172a;
+        font-weight: 600;
+    }
+    .today-role-sep {
+        font-weight: 500;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        margin-left: 2px;
+    }
+
+    .pill-activity-badge {
+        font-size: 0.74rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .pill-category-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .pill-status-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .pill-status-pending {
+        background: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fde68a;
+    }
+    .pill-status-done {
+        background: #d1fae5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+    .pill-status-info {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .today-time-ago {
+        font-size: 0.76rem;
+        color: #94a3b8;
+        white-space: nowrap;
+        min-width: 65px;
+        text-align: right;
+    }
+</style>
+@endpush
 
 @section('content')
     <div class="d-flex justify-content-end mb-3">
@@ -150,50 +345,124 @@
     </div>
 
     <!-- Today's Activity Section -->
-    <div class="list-container-card">
+    <div class="today-activity-card mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h3 class="section-title mb-0">
-                <i class="fas fa-bolt" style="color: var(--accent-orange)"></i> Today's Activity
+            <h3 class="today-activity-title">
+                <span style="color: #f59e0b; margin-right: 8px;">⚡</span> Today's Activity
             </h3>
-            <span style="font-size:0.75rem; color:var(--text-secondary); background:var(--bg-gray); padding:0.2rem 0.6rem; border-radius:12px; border:1px solid rgba(0,0,0,0.05);">Live - Real-time notifications</span>
+            <span class="live-notifications-badge">
+                <span class="live-pulse-dot"></span> Live · Real-time notifications
+            </span>
+        </div>
         
-
-</div>
-        
-        <div class="activity-tabs">
-            <div class="activity-tab active">
-                <i class="fas fa-users"></i> Staff Activities
-            </div>
-            <div class="activity-tab" style="background:var(--bg-gray);">
-                <i class="fas fa-bell" style="color:var(--accent-red);"></i> Technical Head Notifications
-            </div>
+        <div class="today-activity-nav">
+            <button type="button" class="today-tab-btn active staff-tab-btn" id="btnTabStaff" onclick="switchTodayActivityTab('staff')">
+                <span>🧑‍💼</span> Staff Activities
+            </button>
+            <button type="button" class="today-tab-btn notif-tab-btn" id="btnTabNotif" onclick="switchTodayActivityTab('notifications')">
+                <span>🎯</span> Technical Head Notifications
+            </button>
         </div>
 
-        <div class="list-wrapper">
-            @foreach($todayActivities as $activity)
-            <div class="list-item-row flex-wrap flex-sm-nowrap" style="background: transparent; border: none; border-bottom: 1px solid var(--border-color); border-radius: 0; padding-left: 0; padding-right: 0;">
-                <div class="d-flex align-items-center w-100 w-sm-auto mb-2 mb-sm-0 flex-grow-1">
-                    <div class="avatar-tech" style="background: {{ $activity['color'] }}; color: white; width: 35px; height: 35px; font-size:0.9rem;">
-                        {{ $activity['initials'] }}
+        <!-- Panel 1: Staff Activities -->
+        <div id="panelStaffActivities">
+            @forelse($staffActivities as $act)
+            <div class="today-item-row flex-wrap flex-sm-nowrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="staff-avatar-round" style="background: {{ $act['color'] }};">
+                        {{ $act['initials'] }}
                     </div>
-                    <div class="item-info mb-0">
-                        <div class="item-name" style="font-size:0.85rem;">
-                            {{ $activity['name'] }} <span style="font-weight:normal; font-size:0.75rem; color:var(--text-secondary);">• {{ $activity['role'] }}</span>
+                    <div>
+                        <div class="today-item-text-title">
+                            {{ $act['name'] }} <span class="today-role-sep">· {{ $act['role'] }}</span>
                         </div>
-                        <div class="item-meta" style="color: var(--text-primary); font-size: 0.85rem; font-weight:500;">
-                            {!! str_replace('—', '<span style="color:var(--text-secondary); margin:0 4px;">—</span>', $activity['action']) !!}
+                        <div class="today-item-text-sub">
+                            {{ $act['action_prefix'] }} <strong>{{ $act['action_highlight'] }}</strong>
                         </div>
                     </div>
                 </div>
-                <div class="batch-meta d-flex flex-row flex-sm-column align-items-center align-items-sm-end justify-content-between justify-content-sm-center" style="gap:0.5rem;">
-                    <div class="activity-badge" style="background: {{ $activity['badge_color'] }}15; color: {{ $activity['badge_color'] }}; border-color: {{ $activity['badge_color'] }}30;">
-                        <i class="fas fa-circle" style="font-size:0.4rem; margin-right:4px;"></i> {{ $activity['badge'] }}
-                    </div>
-                    <div class="activity-time">{{ $activity['time_ago'] }}</div>
+                <div class="d-flex align-items-center gap-3 ms-auto ms-sm-0">
+                    <span class="pill-activity-badge" style="background: {{ $act['badge_bg'] }}; color: {{ $act['badge_color'] }}; border: 1px solid {{ $act['badge_color'] }}40;">
+                        <span>{{ $act['badge_icon'] }}</span> {{ $act['badge_text'] }}
+                    </span>
+                    <span class="today-time-ago">{{ $act['time_ago'] }}</span>
                 </div>
             </div>
-            @endforeach
+            @empty
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-calendar-check fa-2x mb-2 text-secondary opacity-50"></i>
+                <div class="fw-semibold text-secondary">No staff activities recorded yet</div>
+            </div>
+            @endforelse
+        </div>
+
+        <!-- Panel 2: Technical Head Notifications -->
+        <div id="panelTechHeadNotifications" style="display: none;">
+            @forelse($techHeadNotifications as $notif)
+            <div class="today-item-row flex-wrap flex-sm-nowrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="notif-icon-squircle" style="background: {{ $notif['icon_bg'] }};">
+                        <i class="{{ $notif['icon'] }}"></i>
+                    </div>
+                    <div>
+                        <div class="today-item-text-title">
+                            {{ $notif['title'] }}
+                        </div>
+                        <div class="today-item-text-sub" style="color: var(--text-secondary, #64748b);">
+                            {{ $notif['subtitle'] }}
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-auto ms-sm-0">
+                    <span class="pill-category-badge" style="color: {{ $notif['category_color'] ?? '#64748b' }}; border-color: {{ ($notif['category_color'] ?? '#64748b') }}30; background: #f8fafc;">
+                        {{ $notif['category'] }}
+                    </span>
+                    @if($notif['status'] == 'PENDING')
+                        <span class="pill-status-badge pill-status-pending">
+                            <i class="fas fa-hourglass-half" style="font-size: 0.65rem;"></i> PENDING
+                        </span>
+                    @elseif($notif['status'] == 'DONE')
+                        <span class="pill-status-badge pill-status-done">
+                            <i class="fas fa-check" style="font-size: 0.65rem;"></i> DONE
+                        </span>
+                    @else
+                        <span class="pill-status-badge pill-status-info">
+                            <i class="fas fa-info-circle" style="font-size: 0.65rem;"></i> INFO
+                        </span>
+                    @endif
+                    <span class="today-time-ago ms-1">{{ $notif['time_ago'] }}</span>
+                </div>
+            </div>
+            @empty
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i>
+                <div class="fw-semibold text-secondary">No system notifications found</div>
+            </div>
+            @endforelse
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function switchTodayActivityTab(tabType) {
+        const btnStaff = document.getElementById('btnTabStaff');
+        const btnNotif = document.getElementById('btnTabNotif');
+        const panelStaff = document.getElementById('panelStaffActivities');
+        const panelNotif = document.getElementById('panelTechHeadNotifications');
+
+        if (tabType === 'staff') {
+            btnStaff.classList.add('active');
+            btnNotif.classList.remove('active');
+            panelStaff.style.display = 'block';
+            panelNotif.style.display = 'none';
+        } else {
+            btnNotif.classList.add('active');
+            btnStaff.classList.remove('active');
+            panelStaff.style.display = 'none';
+            panelNotif.style.display = 'block';
+        }
+    }
+</script>
+@endpush

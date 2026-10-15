@@ -21,8 +21,8 @@ class EnsureDashboardAccess
             return redirect()->route('login');
         }
 
-        // SuperAdmin can access any dashboard
-        if ($user->hasRole('SuperAdmin')) {
+        // SuperAdmin (or currently impersonating admin) can access any dashboard
+        if ($user->hasRole('SuperAdmin') || $request->session()->has('impersonated_by')) {
             return $next($request);
         }
 

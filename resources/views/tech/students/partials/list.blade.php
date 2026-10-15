@@ -19,8 +19,11 @@
         else
             $badgeBg = '#eff6ff'; // blue
 
-        $attend = rand(60, 95); // Placeholder for attendance logic
-        $progColor = '#10b981'; // green > 70
+        $attend = isset($admission->attendance_percentage) 
+            ? (int) $admission->attendance_percentage 
+            : (\App\Http\Controllers\StudentsManagementController::calculateStudentAttendance($admission)['percentage'] ?? 0);
+
+        $progColor = '#10b981'; // green >= 70
         if ($attend < 50)
             $progColor = '#ef4444'; // red
         else if ($attend < 70)
@@ -51,28 +54,42 @@
                 class="date-text">{{ $admission->created_at ? $admission->created_at->format('d M Y') : '-' }}</span>
         </td>
         <td>
-            <div class="attend-progress-wrapper">
-                <div class="attend-progress-track">
-                    <div class="attend-progress-fill"
-                        style="width: {{ $attend }}%; background: {{ $progColor }};"></div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="attend-progress-wrapper" title="{{ $attend }}% Attendance for {{ $batchCode }} ({{ $courseName }})"
+                    style="cursor: pointer;" onclick="event.stopPropagation(); showAttendanceDetails({{ $admission->id }});">
+                    <div class="attend-progress-track">
+                        <div class="attend-progress-fill"
+                            style="width: {{ $attend }}%; background: {{ $progColor }};"></div>
+                    </div>
+                    <span class="attend-val" style="color: {{ $attend > 0 ? $progColor : '#94a3b8' }};">{{ $attend }}%</span>
                 </div>
-                <span class="attend-val" style="color: {{ $progColor }};">{{ $attend }}%</span>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-semibold border"
+                    style="font-size: 0.72rem; line-height: 1.6; white-space: nowrap; background: #fff;"
+                    onclick="event.stopPropagation(); showAttendanceDetails({{ $admission->id }});"
+                    title="View dynamic attendance details for {{ $name }}">
+                    <i class="fas fa-list-check me-1"></i> Details
+                </button>
             </div>
         </td>
         @php
             $rawStatus = strtolower($admission->status);
-            if (in_array($rawStatus, ['active', 'ongoing'])) {
-                $displayStatus = 'Active';
-                $statusClass = 'active';
-            } elseif ($rawStatus == 'pending_fee') {
-                $displayStatus = 'Pending';
-                $statusClass = 'pending_fee';
-            } elseif ($rawStatus == 'completed') {
+            $feeStatus = $admission->fee_details['fee_status'] ?? 'Paid';
+            
+            if ($rawStatus == 'completed') {
                 $displayStatus = 'Completed';
                 $statusClass = 'completed';
+            } elseif ($feeStatus === 'Paid' || in_array($rawStatus, ['active', 'ongoing'])) {
+                $displayStatus = 'Active';
+                $statusClass = 'active';
+            } elseif ($feeStatus === 'Partial') {
+                $displayStatus = 'Active';
+                $statusClass = 'active';
+            } elseif ($rawStatus == 'pending_fee' || $feeStatus === 'Pending') {
+                $displayStatus = 'Pending';
+                $statusClass = 'pending_fee';
             } else {
-                $displayStatus = 'Inactive';
-                $statusClass = 'inactive';
+                $displayStatus = 'Active';
+                $statusClass = 'active';
             }
         @endphp
         <td>

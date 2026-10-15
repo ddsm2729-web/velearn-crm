@@ -91,6 +91,7 @@ Route::get('/my-mini-projects/{id}', [CourseAPIController::class, 'myMiniProject
 Route::post('/main-projects/{userId}/{id}/submit', [CourseAPIController::class, 'submitMainProject']);
 Route::post('/mini-projects/{userId}/{id}/submit', [CourseAPIController::class, 'submitMiniProject']);
 Route::get('/live-dashboard/{id}', [CourseAPIController::class, 'liveDashboard']);
+Route::get('/student-attendance/{id}', [CourseAPIController::class, 'studentAttendanceCalendar']);
 Route::get('/student-modules-history/{id}', [CourseAPIController::class, 'studentModulesHistory']);
 
 // Student Video Notes

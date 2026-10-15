@@ -15,8 +15,8 @@
                     $backRoute = route('batch-allocation.index');
                 }
             @endphp
-            <a href="{{ $backRoute }}" class="btn btn-link text-muted p-0 me-3" style="text-decoration: none;">
-                <i class="fas fa-arrow-left"></i> Back to Batches
+            <a href="javascript:history.back()" class="btn btn-link text-muted p-0 me-3" style="text-decoration: none;">
+                <i class="fas fa-arrow-left me-2"></i> Back to Batches
             </a>
             <h2 class="fw-bold text-dark mb-0">{{ $batch->batch_code }} — Batch Overview</h2>
         </div>

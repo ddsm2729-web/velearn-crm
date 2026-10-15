@@ -25,7 +25,7 @@ class LeadController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Lead::with(['status', 'assignee', 'source', 'latestActivity']);
+        $query = Lead::with(['status', 'assignee', 'source', 'latestActivity', 'admission.payments']);
 
         if (!auth()->user()->hasRole('SuperAdmin')) {
             $staff = \App\Models\Staff::where('auth_id', auth()->id())->first();
@@ -69,7 +69,33 @@ class LeadController extends Controller implements HasMiddleware
             });
         }
 
-        if ($request->filled('status')) {
+        $tab = $request->get('tab');
+        $status = $request->get('status');
+
+        if (in_array($tab, ['payment_link', 'payment_link_sent', 'payment_link_generated']) || in_array($status, ['payment_link', 'payment_link_sent', 'payment_link_generated'])) {
+            $query->whereHas('admission.payments', function($q) {
+                $q->where(function($sq) {
+                    $sq->whereNotNull('payment_link_url')
+                       ->where('payment_link_url', '!=', '')
+                       ->orWhereNotNull('payment_link_sent_at');
+                })->where(function($sq) {
+                    $sq->whereNull('status')
+                       ->orWhereNotIn('status', ['Paid', 'paid', 'Completed', 'completed']);
+                });
+            })->whereDoesntHave('admission.payments', function($q) {
+                $q->whereIn('status', ['Paid', 'paid', 'Completed', 'completed']);
+            })->whereDoesntHave('status', function($q) {
+                $q->whereIn('name', ['Payment Done', 'Paid']);
+            });
+        } elseif (in_array($tab, ['payment_done', 'paid']) || in_array($status, ['payment_done', 'paid'])) {
+            $query->where(function($q) {
+                $q->whereHas('admission.payments', function($sq) {
+                    $sq->whereIn('status', ['Paid', 'paid', 'Completed', 'completed']);
+                })->orWhereHas('status', function($sq) {
+                    $sq->whereIn('name', ['Payment Done', 'Paid']);
+                });
+            });
+        } elseif ($request->filled('status')) {
             $query->where('lead_status_id', $request->status);
         }
 

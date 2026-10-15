@@ -6,7 +6,7 @@
         <h3><strong>Placement Class Questions</strong></h3>
     </div>
     <div class='col-auto ms-auto text-end mt-n1 d-flex gap-2'>
-        <a href='{{ route("placement-classes.index") }}' class='btn btn-secondary d-flex align-items-center shadow-sm'>
+        <a href="javascript:history.back()" class='btn btn-secondary d-flex align-items-center shadow-sm'>
             <i class='fas fa-arrow-left me-2'></i> Back
         </a>
         <a href='{{ route("placement-class-questions.create", ["class_id" => request("class_id")]) }}' class='btn btn-primary d-flex align-items-center shadow-sm'>

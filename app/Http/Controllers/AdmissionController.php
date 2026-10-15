@@ -48,6 +48,15 @@ class AdmissionController extends Controller
             ]
         );
 
+        // Keep batch joined_student_count in sync
+        if (!empty($request->batch_id)) {
+            $batch = \App\Models\Batch::find($request->batch_id);
+            if ($batch) {
+                $batchCount = \App\Models\Admission::where('batch_id', $batch->id)->count();
+                $batch->update(['joined_student_count' => $batchCount]);
+            }
+        }
+
         // Also add a "Registered" tag if not exists
         $registeredTag = LeadTag::firstOrCreate(
             ['name' => 'Registered'],

@@ -24,4 +24,9 @@ class LeadSource extends Model
     {
         return $this->belongsToMany(Role::class, 'lead_source_role', 'lead_source_id', 'role_id');
     }
+
+    public function leads()
+    {
+        return $this->hasMany(Lead::class, 'lead_source_id');
+    }
 }

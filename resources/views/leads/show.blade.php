@@ -7,14 +7,12 @@
 @section('section')
     <div class="container-fluid p-0 lead-profile-container mb-5">
         {{-- Header / Back Button --}}
-        <div class="row mb-3">
-            <div class="col-12">
-                <a href="javascript:history.back()"
-                    class="text-primary text-decoration-none d-inline-flex align-items-center back-btn">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Back to Lead
-                </a>
-            </div>
+        <div class="mb-3 d-flex align-items-center">
+            <a href="javascript:history.back()"
+                class="btn btn-sm bg-white border text-primary rounded-pill shadow-sm back-btn d-inline-flex align-items-center">
+                <i class="fas fa-arrow-left me-2"></i>
+                Back to Leads
+            </a>
         </div>
 
         {{-- Main Profile Card --}}
@@ -40,15 +38,15 @@
                     </div>
                     <div class="d-flex gap-2">
                         @can('Lead Edit')
-                        <a href="{{ route('leads.edit', encrypt($lead->id)) }}" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+                        <a href="{{ route('leads.edit', encrypt($lead->id)) }}" class="btn btn-success btn-sm px-3 rounded-pill shadow-sm">
                             <i class="fas fa-edit me-1"></i> Edit
                         </a>
-                        <button type="button" class="btn btn-outline-success btn-sm px-3 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                        <button type="button" class="btn btn-success btn-sm px-3 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal">
                             <i class="fas fa-plus me-1"></i> Add Course
                         </button>
                         @endcan
                         @can('Schedule Demo')
-                        <a href="{{ route('schedules.index', ['lead_id' => $lead->id]) }}" class="btn btn-primary btn-sm px-3 rounded-pill shadow-sm">
+                        <a href="{{ route('schedules.index', ['lead_id' => $lead->id]) }}" class="btn btn-secondary btn-sm px-3 rounded-pill shadow-sm">
                             <i class="fas fa-calendar-check me-1"></i> Schedule Demo
                         </a>
                         @endcan
@@ -996,5 +994,29 @@
 @endpush
 
 @push('css')
-    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/calls-show.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/calls-show.css') }}?v={{ time() }}">
+    <style>
+        .content {
+            padding-top: 1.25rem !important;
+        }
+        .lead-profile-container {
+            padding-top: 0.25rem !important;
+        }
+        .back-btn {
+            padding: 0.45rem 1.15rem !important;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .back-btn:hover {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: #ffffff !important;
+            transform: translateX(-2px);
+            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25) !important;
+        }
+        .back-btn:hover i {
+            color: #ffffff !important;
+        }
+    </style>
 @endpush

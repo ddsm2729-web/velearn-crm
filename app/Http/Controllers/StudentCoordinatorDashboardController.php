@@ -81,6 +81,36 @@ class StudentCoordinatorDashboardController extends Controller
             $totals['batches_total'] += $batchesCount;
         }
 
-        return view('student-coordinator.dashboard.index', compact('coursesData', 'totals'));
+        // Placement Pipeline Statistics (from Final Placement CRM concept)
+        $placementStats = [
+            'eligible_students' => \App\Models\CourseUser::whereHas('course', function($q) {
+                $q->where('course_type', 'live');
+            })->count(),
+            'profile_sent' => \App\Models\PlacementApplication::where('status', 'sent_hr')->count(),
+            'interview_scheduled' => \App\Models\ScheduleInterview::whereIn('status', ['scheduled', 're-scheduled'])->count(),
+            'interview_attended' => \App\Models\ScheduleInterview::where('status', 'attended')->count(),
+            'selected' => \App\Models\ScheduleInterview::where('status', 'selected')->count(),
+            'rejected' => \App\Models\ScheduleInterview::where('status', 'rejected')->count(),
+            'on_hold' => \App\Models\ScheduleInterview::whereIn('status', ['hold', 'on hold'])->count(),
+            'rescheduled' => \App\Models\ScheduleInterview::whereIn('status', ['rescheduled', 're-scheduled', 'not attended', 'no show'])->count(),
+            'pending_followups' => \App\Models\Followup::where('type', 'student')->where('status', 'pending')->count(),
+        ];
+
+        // Today's scheduled interviews for coordinator
+        $todaysInterviews = \App\Models\ScheduleInterview::whereDate('date', today())->latest()->take(6)->get();
+
+        // Recent applications waiting for coordinator review
+        $recentApplications = \App\Models\PlacementApplication::with(['user', 'opening.company'])
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('student-coordinator.dashboard.index', compact(
+            'coursesData',
+            'totals',
+            'placementStats',
+            'todaysInterviews',
+            'recentApplications'
+        ));
     }
 }

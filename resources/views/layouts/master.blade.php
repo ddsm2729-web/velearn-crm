@@ -3,9 +3,8 @@
 
 <head>
     @include('includes.head')
-    @push('css')
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/layouts-header.css') }}">
-@endpush
+    @stack('css')
 </head>
 
 <body>
@@ -16,7 +15,7 @@
 
     <div class="wrapper">
         
-        @if(auth()->check() && auth()->user()->hasRole('SuperAdmin')  || auth()->check() && auth()->user()->hasRole('Operation Executive'))
+        @if(auth()->check() && (auth()->user()->hasRole('SuperAdmin') || auth()->user()->hasRole('Operation Executive') || auth()->user()->hasRole('Digital Marketing')))
             @include('includes.super_admin_sidebar')
         @else
             @include('includes.sidebar')

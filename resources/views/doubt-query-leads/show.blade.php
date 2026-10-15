@@ -7,7 +7,7 @@
         {{-- Header / Back Button --}}
         <div class="row mb-3">
             <div class="col-12">
-                <a href="{{ session('support_back_url', route('doubt-query-leads.index')) }}"
+                <a href="javascript:history.back()"
                     class="text-primary text-decoration-none d-inline-flex align-items-center back-btn">
                     <i class="fas fa-arrow-left me-2"></i> Back to
                     {{ str_contains(session('support_back_url', ''), 'outbound') ? 'Outbound' : 'Inbound' }} Leads

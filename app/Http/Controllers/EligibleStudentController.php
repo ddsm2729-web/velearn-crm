@@ -10,7 +10,18 @@ class EligibleStudentController extends Controller
     {
         $courses = \App\Models\Course::where('course_type', 'live')->orderBy('title')->get(['id', 'title']);
         
-        $query = \App\Models\CourseUser::with(['user', 'course', 'batch'])
+        $opening = null;
+        if ($request->filled('opening')) {
+            $openingId = $request->opening;
+            try {
+                $openingId = decrypt($openingId);
+            } catch (\Exception $e) {
+                // If not encrypted, use as-is
+            }
+            $opening = \App\Models\CurrentOpening::with('company')->find($openingId);
+        }
+
+        $query = \App\Models\CourseUser::with(['user.placementProfile', 'placementProfile', 'course', 'batch'])
             ->whereHas('course', function($q) {
                 $q->where('course_type', 'live');
             })
@@ -28,7 +39,7 @@ class EligibleStudentController extends Controller
         // Only get completed batches per requirement if strictly needed,
         // but typically Eligible Students have status = 'Completed'.
         // For now, let's fetch those who are in a batch, and we will calculate progress.
-        $students = $query->paginate(20);
+        $students = $query->paginate(20)->withQueryString();
 
         // Attach calculated scores to each student in the paginator collection
         foreach ($students->getCollection() as $courseUser) {
@@ -37,7 +48,53 @@ class EligibleStudentController extends Controller
             $courseUser->calc_overall = $scores['overall'];
         }
 
-        return view('eligible-students.index', compact('students', 'courses'));
+        return view('eligible-students.index', compact('students', 'courses', 'opening'));
+    }
+
+    /**
+     * Push opening to selected eligible students / batches for LMS visibility.
+     */
+    public function pushToLms(Request $request)
+    {
+        $request->validate([
+            'opening_id' => 'required',
+            'course_user_ids' => 'required|array|min:1',
+        ]);
+
+        $openingId = $request->opening_id;
+        try {
+            $openingId = decrypt($openingId);
+        } catch (\Exception $e) {
+            // plain id
+        }
+
+        $opening = \App\Models\CurrentOpening::with('company')->findOrFail($openingId);
+        $courseUsers = \App\Models\CourseUser::whereIn('id', $request->course_user_ids)->get();
+
+        $pushedCount = 0;
+        foreach ($courseUsers as $cu) {
+            $existing = \App\Models\PlacementApplication::where('opening_id', $opening->id)
+                ->where('user_id', $cu->auth_id)
+                ->first();
+
+            if (!$existing) {
+                \App\Models\PlacementApplication::create([
+                    'opening_id' => $opening->id,
+                    'user_id' => $cu->auth_id,
+                    'course_user_id' => $cu->id,
+                    'status' => 'applied',
+                    'is_new' => true,
+                    'notes' => 'Pushed to student LMS by Student Coordinator',
+                ]);
+                $pushedCount++;
+            }
+        }
+
+        $companyName = $opening->company->company_name ?? 'Company';
+        $role = $opening->job_role ?? 'Role';
+
+        return redirect()->route('applied-openings.show', $opening->id)
+            ->with('success', "Successfully pushed {$companyName} ({$role}) to {$pushedCount} student(s) LMS feed.");
     }
 
     private function calculateScores($userId, $courseId, $batchId)

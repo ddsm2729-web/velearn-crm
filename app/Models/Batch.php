@@ -58,5 +58,24 @@ class Batch extends Model
     {
         return $this->hasMany(BatchAttendance::class);
     }
+
+    public function admissions()
+    {
+        return $this->hasMany(Admission::class);
+    }
+
+    public function getJoinedStudentCountAttribute($value)
+    {
+        if (isset($this->attributes['admissions_count'])) {
+            return (int) $this->attributes['admissions_count'];
+        }
+
+        if ($this->relationLoaded('admissions')) {
+            return $this->admissions->count();
+        }
+
+        $count = $this->admissions()->count();
+        return $count > 0 ? $count : (int) ($value ?? 0);
+    }
 }
 

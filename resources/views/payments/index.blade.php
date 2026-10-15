@@ -161,9 +161,9 @@
                             </td>
                             <td class="px-4 py-3 text-end">
                                 @if(strtolower($payment->status) === 'paid')
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2">
+                                    <a href="{{ route('payments.invoice', $payment->id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2" target="_blank" title="Download Invoice">
                                         <i class="fas fa-file-invoice me-1"></i> Receipt
-                                    </button>
+                                    </a>
                                 @else
                                     @if($payment->payment_link_url && $payment->payment_link_expires_at && \Carbon\Carbon::parse($payment->payment_link_expires_at)->isFuture())
                                         <div class="d-flex gap-1 justify-content-end">
